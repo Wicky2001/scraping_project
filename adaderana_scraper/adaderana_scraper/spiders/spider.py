@@ -1,5 +1,7 @@
 import scrapy
 from scrapy_selenium import SeleniumRequest
+import datetime
+import re
 
 class AdaderanaSpider(scrapy.Spider):
     name = 'spider'
@@ -37,11 +39,35 @@ class AdaderanaSpider(scrapy.Spider):
     def parse_news(self, response):
         # Step 4: Scrape title and body content
         title = response.css('article.news h1.news-heading::text').get()
-        body = ' '.join(response.css('article.news div.news-content p::text').getall())
+        content = ' '.join(response.css('article.news div.news-content p::text').getall())
+        date_raw = response.css('article.news p.news-datestamp::text').get()
+        cover_image_url = response.css('article.news div.news-banner img::attr(src)').get()  # Get all image URLs
+        iso_date = self.clean_date(date_raw)
 
-        if title and body:
-            yield {
-                'title': title.strip(),
-                'body': body.strip(),
-                'url': response.url
-            }
+
+        if title and content and iso_date:
+             yield {
+            'title': title.strip(),
+            'url':response.url,
+            'cover_image':cover_image_url,
+            'date_published': iso_date,
+            'content': content.strip(),
+            'source': self.start_urls[0]
+        }
+             
+    def clean_date(self,raw_date):
+        if raw_date:
+            try: 
+                cleaned_date = re.sub(r'\s+', ' ', raw_date).strip()  
+
+                # Step 2: Parse the date string into datetime object
+                date_obj = datetime.datetime.strptime(cleaned_date, "%B %d, %Y %I:%M %p")
+
+                # Step 3: Convert to ISO 8601 Format (UTC Time)
+                iso_date = date_obj.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+                return iso_date
+            except Exception as e:
+                return None
+        return None
+         
