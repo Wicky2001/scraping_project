@@ -1,5 +1,6 @@
 import scrapy
 from scrapy_selenium import SeleniumRequest
+from datetime import datetime, timedelta
 
 class AdaderanaSpider(scrapy.Spider):
     name = 'spider'
@@ -7,15 +8,10 @@ class AdaderanaSpider(scrapy.Spider):
 
     def start_requests(self):
         # Start from the home page using Selenium
-        # for url in self.start_urls:
-        #     yield SeleniumRequest(
-        #         url=url,
-        #         callback=self.parse_main_links
-        #     )
-
-        yield SeleniumRequest(
-               url=self.start_urls[0],
-               callback=self.parse_main_links
+        for url in self.start_urls:
+            yield SeleniumRequest(
+                url=url,
+                callback=self.parse_main_links
             )
 
     def parse_main_links(self, response):
@@ -35,13 +31,24 @@ class AdaderanaSpider(scrapy.Spider):
                 yield scrapy.Request(full_link, callback=self.parse_news)
 
     def parse_news(self, response):
-        # Step 4: Scrape title and body content
+        # Step 4: Scrape title, body content, and publication date
         title = response.css('article.news h1.news-heading::text').get()
         body = ' '.join(response.css('article.news div.news-content p::text').getall())
+        date_str = response.css('article.news time::attr(datetime)').get()  # Adjust the selector based on the actual HTML structure
 
-        if title and body:
-            yield {
-                'title': title.strip(),
-                'body': body.strip(),
-                'url': response.url
-            }
+        if date_str:
+            # Convert the date string to a datetime object
+            article_date = datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%S')  # Adjust the format based on the actual date format
+
+            # Get the current date and time
+            now = datetime.now()
+
+            # Check if the article is within the last 1 hours
+            if now - article_date <= timedelta(hours=1):
+                if title and body:
+                    yield {
+                        'title': title.strip(),
+                        'body': body.strip(),
+                        'url': response.url,
+                        'date': article_date.isoformat()
+                    }
