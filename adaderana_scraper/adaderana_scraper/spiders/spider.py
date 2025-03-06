@@ -25,7 +25,7 @@ class AdaderanaSpider(scrapy.Spider):
         main_links = response.css('a::attr(href)').getall()
         filtered_links = [link for link in main_links if link.startswith('http')]
 
-        # Step 2: Follow only main news links
+        # Step 2: Follow filtered news links
         for link in filtered_links:
             yield scrapy.Request(link, callback=self.parse_article_links)
 
@@ -42,10 +42,10 @@ class AdaderanaSpider(scrapy.Spider):
         content = ' '.join(response.css('article.news div.news-content p::text').getall())
         date_raw = response.css('article.news p.news-datestamp::text').get()
         cover_image_url = response.css('article.news div.news-banner img::attr(src)').get()  # Get all image URLs
-        iso_date = self.clean_date(date_raw)
+        iso_date,too_old = self.clean_date(date_raw)
 
 
-        if title and content and iso_date:
+        if title and content and iso_date and (not too_old):
              yield {
             'title': title.strip(),
             'url':response.url,
@@ -55,19 +55,21 @@ class AdaderanaSpider(scrapy.Spider):
             'source': self.start_urls[0]
         }
              
-    def clean_date(self,raw_date):
-        if raw_date:
-            try: 
-                cleaned_date = re.sub(r'\s+', ' ', raw_date).strip()  
+    def clean_date(self, raw_date):
+        if not raw_date:
+            return None, False
 
-                # Step 2: Parse the date string into datetime object
-                date_obj = datetime.datetime.strptime(cleaned_date, "%B %d, %Y %I:%M %p")
+        try:
+            cleaned_date = re.sub(r'\s+', ' ', raw_date).strip()
+            date_obj = datetime.datetime.strptime(cleaned_date, "%B %d, %Y %I:%M %p")
+            iso_date = date_obj.strftime("%Y-%m-%dT%H:%M:%SZ")
 
-                # Step 3: Convert to ISO 8601 Format (UTC Time)
-                iso_date = date_obj.strftime("%Y-%m-%dT%H:%M:%SZ")
+            now = datetime.datetime.now(datetime.timezone.utc)
+            time_diff = now - date_obj.replace(tzinfo=datetime.timezone.utc)
 
-                return iso_date
-            except Exception as e:
-                return None
-        return None
+            if time_diff.total_seconds() > 6 * 3600:  # 6 hours
+                return iso_date, True
+            return iso_date, False
+        except Exception as e:
+            return None, False
          
