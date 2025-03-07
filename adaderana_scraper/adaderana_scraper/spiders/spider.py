@@ -5,7 +5,7 @@ import re
 
 class AdaderanaSpider(scrapy.Spider):
     name = 'spider'
-    start_urls = ['https://sinhala.adaderana.lk/', 'https://www.hirunews.lk/']
+    start_urls = ['https://www.itnnews.lk/','https://sinhala.adaderana.lk/', 'https://www.hirunews.lk/']
 
     def start_requests(self):
         # Start from the home page using Selenium
@@ -24,7 +24,7 @@ class AdaderanaSpider(scrapy.Spider):
         # Step 1: Get only full links from the home page
         main_links = response.css('a::attr(href)').getall()
         filtered_links = [link for link in main_links if link.startswith('http')]
-
+        print("*************************************************",filtered_links)
         # Step 2: Follow filtered news links
         for link in filtered_links:
             yield scrapy.Request(link, callback=self.parse_article_links)
@@ -38,38 +38,38 @@ class AdaderanaSpider(scrapy.Spider):
 
     def parse_news(self, response):
         # Step 4: Scrape title and body content
-        title = response.css('article.news h1.news-heading::text').get()
-        content = ' '.join(response.css('article.news div.news-content p::text').getall())
-        date_raw = response.css('article.news p.news-datestamp::text').get()
-        cover_image_url = response.css('article.news div.news-banner img::attr(src)').get()  # Get all image URLs
-        iso_date,too_old = self.clean_date(date_raw)
+        title = response.css('div.single-header-content h1.fw-headline::text').get()
+        content = ' '.join(response.css('div.entry-content p::text').getall())
+        date_raw = response.css('time::attr(datetime)').get()
+        cover_image_url = response.css('div.s-feat-holder img::attr(src)').get()  # Get all image URLs
+        # iso_date,too_old = self.clean_date(date_raw)
 
 
-        if title and content and iso_date and (not too_old):
+        if title:
              yield {
             'title': title.strip(),
             'url':response.url,
             'cover_image':cover_image_url,
-            'date_published': iso_date,
+            'date_published': date_raw,
             'content': content.strip(),
-            'source': self.start_urls[0]
+            # 'source': self.start_urls[0]
         }
              
-    def clean_date(self, raw_date):
-        if not raw_date:
-            return None, False
+    # def clean_date(self, raw_date):
+    #     if not raw_date:
+    #         return None, False
 
-        try:
-            cleaned_date = re.sub(r'\s+', ' ', raw_date).strip()
-            date_obj = datetime.datetime.strptime(cleaned_date, "%B %d, %Y %I:%M %p")
-            iso_date = date_obj.strftime("%Y-%m-%dT%H:%M:%SZ")
+    #     try:
+    #         cleaned_date = re.sub(r'\s+', ' ', raw_date).strip()
+    #         date_obj = datetime.datetime.strptime(cleaned_date, "%B %d, %Y %I:%M %p")
+    #         iso_date = date_obj.strftime("%Y-%m-%dT%H:%M:%SZ")
 
-            now = datetime.datetime.now(datetime.timezone.utc)
-            time_diff = now - date_obj.replace(tzinfo=datetime.timezone.utc)
+    #         now = datetime.datetime.now(datetime.timezone.utc)
+    #         time_diff = now - date_obj.replace(tzinfo=datetime.timezone.utc)
 
-            if time_diff.total_seconds() > 6 * 3600:  # 6 hours
-                return iso_date, True
-            return iso_date, False
-        except Exception as e:
-            return None, False
+    #         if time_diff.total_seconds() > 6 * 3600:  # 6 hours
+    #             return iso_date, True
+    #         return iso_date, False
+    #     except Exception as e:
+    #         return None, False
          
