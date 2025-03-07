@@ -2,6 +2,7 @@ import scrapy
 from scrapy_selenium import SeleniumRequest
 import datetime
 import re
+import pytz
 
 class AdaderanaSpider(scrapy.Spider):
     name = 'spider'
@@ -99,21 +100,31 @@ class AdaderanaSpider(scrapy.Spider):
         return filtered_links
 
              
-    # def clean_date(self, raw_date):
-    #     if not raw_date:
-    #         return None, False
+    def process_date(raw_date, url):
+        if not raw_date:
+            return None, False
 
-    #     try:
-    #         cleaned_date = re.sub(r'\s+', ' ', raw_date).strip()
-    #         date_obj = datetime.datetime.strptime(cleaned_date, "%B %d, %Y %I:%M %p")
-    #         iso_date = date_obj.strftime("%Y-%m-%dT%H:%M:%SZ")
+        try:
+            cleaned_date = re.sub(r'\s+', ' ', raw_date).strip()
+            now = datetime.datetime.now(datetime.timezone.utc)  # Current time in UTC
 
-    #         now = datetime.datetime.now(datetime.timezone.utc)
-    #         time_diff = now - date_obj.replace(tzinfo=datetime.timezone.utc)
+            if url == "derana":
+                date_obj = datetime.datetime.strptime(cleaned_date, "%B %d, %Y %I:%M %p")
+                date_obj = date_obj.replace(tzinfo=datetime.timezone.utc)  # Convert to UTC
+                iso_date = date_obj.strftime("%Y-%m-%dT%H:%M:%SZ")
 
-    #         if time_diff.total_seconds() > 6 * 3600:  # 6 hours
-    #             return iso_date, True
-    #         return iso_date, False
-    #     except Exception as e:
-    #         return None, False
+            elif url == "ITN":
+                local_date = datetime.datetime.fromisoformat(cleaned_date)
+                utc_date = local_date.astimezone(pytz.utc)
+                iso_date = utc_date.strftime("%Y-%m-%dT%H:%M:%SZ")
+                date_obj = utc_date
+
+            else:
+                return None, False
+
+            time_diff = now - date_obj
+            return iso_date, time_diff.total_seconds() > 6 * 3600  # True if older than 6 hours
+
+        except Exception:
+            return None, False
          
