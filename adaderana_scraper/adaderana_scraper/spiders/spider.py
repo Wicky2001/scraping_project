@@ -66,28 +66,37 @@ class AdaderanaSpider(scrapy.Spider):
         print("Filtered links appended to filtered_links.txt")
 
 
-    def filter_social_links(self,links):
-        http_links = [link for link in links if re.match(r'^https?://', link)]
-        unwanted_links = [
-            "https://www.lakhandaradio.lk/",
-            "https://www.vasanthamfm.lk/",
-            "https://www.vasanthamtv.lk"
-        ]
+def filter_social_links(links):
+    http_links = [link for link in links if re.match(r'^https?://', link)]
+    
+    # List of unwanted words to check in the link
+    unwanted_words = [
+        "visekari", "paradeese", "raaga", "seya", "pini-viyana", "hathweni-peya", 
+        "sasankara", "theeranaya", "vasantham",
+    ]
+    
+    social_media_patterns = [
+        "facebook.com", "twitter.com", "youtube.com", "instagram.com",'linkedin.com',"tiktok.com"
+    ]
+    
+    filtered_links = []
+    
+    for link in http_links:
+        # Skip links with unwanted words
+        if any(word in link for word in unwanted_words):
+            continue
         
-        social_media_patterns = [
-            "facebook.com",
-            "twitter.com",
-            "youtube.com",
-            "instagram.com"
-        ]
+        # Skip links that end with .jph
+        if link.endswith(".jpg"):
+            continue
         
-        filtered_links = []
+        # Skip social media links
+        if any(sm in link for sm in social_media_patterns):
+            continue
         
-        for link in http_links:
-            if link not in unwanted_links and not any(sm in link for sm in social_media_patterns):
-                filtered_links.append(link)
-        
-        return filtered_links
+        filtered_links.append(link)
+    
+    return filtered_links
 
              
     # def clean_date(self, raw_date):
