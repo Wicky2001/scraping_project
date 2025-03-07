@@ -23,15 +23,19 @@ class AdaderanaSpider(scrapy.Spider):
     def parse_main_links(self, response):
         # Step 1: Get only full links from the home page
         main_links = response.css('a::attr(href)').getall()
-        filtered_links = [link for link in main_links if link.startswith('http')]
-        print("*************************************************",filtered_links)
+        filtered_links = self.filter_social_links(main_links)
+        self.save_links_to_file(filtered_links,"mainlinks.txt")
+       
+
         # Step 2: Follow filtered news links
         for link in filtered_links:
             yield scrapy.Request(link, callback=self.parse_article_links)
 
     def parse_article_links(self, response):
         # Step 3: Get all article links from each news page
-        article_links = response.css("a::attr(href)").getall()
+        article_links = self.filter_social_links(response.css("a::attr(href)").getall())
+        self.save_links_to_file(article_links,"article_links.txt")
+
         for link in article_links:
                 full_link = response.urljoin(link)  # Convert relative links to absolute URLs
                 yield scrapy.Request(full_link, callback=self.parse_news)
@@ -54,6 +58,37 @@ class AdaderanaSpider(scrapy.Spider):
             'content': content.strip(),
             # 'source': self.start_urls[0]
         }
+             
+    def save_links_to_file(self,links,filename):
+        with open(filename, 'a', encoding='utf-8') as file:  # "a" for append mode
+            for link in links:
+                file.write(link + "\n")
+        print("Filtered links appended to filtered_links.txt")
+
+
+    def filter_social_links(self,links):
+        http_links = [link for link in links if re.match(r'^https?://', link)]
+        unwanted_links = [
+            "https://www.lakhandaradio.lk/",
+            "https://www.vasanthamfm.lk/",
+            "https://www.vasanthamtv.lk"
+        ]
+        
+        social_media_patterns = [
+            "facebook.com",
+            "twitter.com",
+            "youtube.com",
+            "instagram.com"
+        ]
+        
+        filtered_links = []
+        
+        for link in http_links:
+            if link not in unwanted_links and not any(sm in link for sm in social_media_patterns):
+                filtered_links.append(link)
+        
+        return filtered_links
+
              
     # def clean_date(self, raw_date):
     #     if not raw_date:
