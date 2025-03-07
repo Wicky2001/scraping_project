@@ -234,6 +234,10 @@ class AdaderanaSpider(scrapy.Spider):
             "/webgossip.lk/",
             "/fmderana.lk/",
             "/pulse.lk/",
+            "/get.adobe.com/",
+            "/bit.ly/",
+            "/get.microsoft.com/",
+            "/whatsapp",
 
         ]
 
