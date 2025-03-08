@@ -7,7 +7,7 @@ import pytz
 
 class AdaderanaSpider(scrapy.Spider):
     name = "spider"
-    start_urls = ["https://sinhala.adaderana.lk/", "https://www.itnnews.lk/"]
+    start_urls = ["https://sinhala.adaderana.lk/", "https://www.itnnews.lk/","https://colombotimes.lk/sinhala/"]
     news_time_difference_in_hours = 12
     parsing_rules = {
         "https://sinhala.adaderana.lk/": {
@@ -21,6 +21,12 @@ class AdaderanaSpider(scrapy.Spider):
             "content": "div.entry-content p::text",
             "date": "time::attr(datetime)",
             "cover_image": "div.s-feat-holder img::attr(src)",
+        },
+        "https://colombotimes.lk/sinhala/": {
+            "title": "div.medium-post h1.entry-title::text",
+            "content": "div.medium-post div.newsdetailtxt p::text",
+            "date": "div.medium-post div.entry-meta li.publish-date::text",
+            "cover_image": "div.medium-post div.entry-thumbnail picture.img::attr(src)",
         },
     }
 
