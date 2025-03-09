@@ -25,7 +25,19 @@ class AdaderanaSpider(scrapy.Spider):
             'content': 'article.news div.news-content p::text',
             'date': 'article.news p.news-datestamp::text',
             'cover_image': 'article.news div.news-banner img::attr(src)'
-        }
+        },
+        'https://colombotimes.lk/sinhala/': {
+            "title": 'div.medium-post h1.entry-title::text',
+            "content": "div.medium-post div.newsdetailtxt p::text",
+            "date": "div.medium-post div.entry-meta li.publish-date::text",
+            "cover_image": "div.medium-post div.entry-thumbnail picture.img::attr(src)",
+        },
+        "https://sinhala.newsfirst.lk/": {
+            "title": "h1.top_stories_header_news::text",
+            "content": "div.new_details p::text",
+            "date": "div.author_date span::text",
+            "cover_image": "div.ng-star-inserted img::attr(src)",
+        },
     }
 
     def start_requests(self):
