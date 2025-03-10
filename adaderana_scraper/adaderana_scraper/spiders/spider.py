@@ -63,7 +63,7 @@ class AdaderanaSpider(scrapy.Spider):
         filtered_links = self.filter_social_links(main_links)
         self.save_links_to_file(filtered_links, "mainlinks.txt")
 
-        for link in filtered_links:
+        for link in filtered_links[:20]:  # Restrict to 20 links per source for testing
             yield scrapy.Request(
                 link, callback=self.parse_article_links, cb_kwargs={"source": source}
             )
@@ -76,7 +76,7 @@ class AdaderanaSpider(scrapy.Spider):
 
         self.save_links_to_file(full_links_cleaned, "article_links.txt")
 
-        for link in full_links_cleaned:
+        for link in full_links_cleaned[:20]:  # Restrict to 20 links per source for testing
             yield scrapy.Request(
                 link, callback=self.parse_news, cb_kwargs={"source": source}
             )
@@ -111,8 +111,11 @@ class AdaderanaSpider(scrapy.Spider):
     def process_with_nlp(self):
         self.check_time_limit()
 
+        # Remove duplicate content from articles before clustering
+        unique_articles = {article['title']: article for article in self.all_articles}.values()
+
         # Combine title and content for context from both sources
-        documents = [f"{article['title']} {article['content']}" for article in self.all_articles]
+        documents = [f"{article['title']} {article['content']}" for article in unique_articles]
 
         # Vectorize the articles using TF-IDF with Sinhala stopwords and tokenization
         vectorizer = TfidfVectorizer(
@@ -131,7 +134,7 @@ class AdaderanaSpider(scrapy.Spider):
         unique_articles = []
         not_found_message = []
 
-        for label, article in zip(labels, self.all_articles):
+        for label, article in zip(labels, unique_articles):
             if label == -1:  # Label -1 means outlier, no group (unique article)
                 unique_articles.append(article)
             else:
@@ -143,23 +146,6 @@ class AdaderanaSpider(scrapy.Spider):
                         "articles": [],
                     }
                 grouped_articles[group_id]["articles"].append(article)
-
-        # Attempt to match articles from Adaderana and ITN
-        for group in grouped_articles.values():
-            # Check if there is a similar article from both sources
-            source_articles = {"adaderana": None, "itn": None}
-            for article in group["articles"]:
-                if "adaderana" in article["source"]:
-                    source_articles["adaderana"] = article
-                elif "itn" in article["source"]:
-                    source_articles["itn"] = article
-            
-            # If both sources are found for the group, group them together
-            if source_articles["adaderana"] and source_articles["itn"]:
-                group["articles"] = [source_articles["adaderana"], source_articles["itn"]]
-            else:
-                # If no matching articles from both sources, indicate no match
-                not_found_message.append("Same news not found from both sources for group: " + group["group_id"])
 
         # Combine grouped articles and unique articles into the final output
         all_grouped_data = list(grouped_articles.values())
@@ -208,6 +194,12 @@ class AdaderanaSpider(scrapy.Spider):
         if not_found_message:
             print("\n".join(not_found_message))
 
+        # Save raw data before processing
+        raw_timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
+        raw_filename = f"raw_news_data_{raw_timestamp}.json"
+        with open(raw_filename, "w", encoding="utf-8") as f:
+            json.dump(self.all_articles, f, ensure_ascii=False, indent=4)
+        print(f"Raw news data saved to {raw_filename}")
 
     def save_output_to_file(self):
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
@@ -260,42 +252,24 @@ class AdaderanaSpider(scrapy.Spider):
             now = datetime.datetime.now(datetime.timezone.utc)
 
             if source == "https://sinhala.adaderana.lk/":
-                date_obj = datetime.datetime.strptime(
-                    cleaned_date, "%B %d, %Y %I:%M %p"
-                )
-                date_obj = date_obj.replace(tzinfo=datetime.timezone.utc)
-                iso_date = date_obj.strftime("%Y-%m-%dT%H:%M:%SZ")
-
-            elif source == "https://www.itnnews.lk/":
-                local_date = datetime.datetime.fromisoformat(cleaned_date)
-                utc_date = local_date.astimezone(pytz.utc)
-                iso_date = utc_date.strftime("%Y-%m-%dT%H:%M:%SZ")
-                date_obj = utc_date
-
+                date_object = datetime.datetime.strptime(cleaned_date, "%d %b %Y %I:%M %p")
+                date_object = pytz.timezone("Asia/Colombo").localize(date_object)
             else:
-                return None, False
+                date_object = datetime.datetime.strptime(cleaned_date, "%Y-%m-%dT%H:%M:%S")
+                date_object = pytz.timezone("Asia/Colombo").localize(date_object)
 
-            time_diff = now - date_obj
-            return (
-                iso_date,
-                time_diff.total_seconds() > self.news_time_difference_in_hours * 3600,
-            )
+            date_object = date_object.astimezone(pytz.timezone("Asia/Colombo"))
+
+            if date_object > now:
+                return None, True
+
+            return date_object.isoformat(), False
 
         except Exception as e:
-            print(f"Date processing error: {e}")
+            print(f"Error processing date: {e}")
             return None, False
 
     def tokenize_sinhala(self, text):
+        # Tokenize using the Sinhala Tokenizer
         tokenizer = SinhalaTokenizer()
         return tokenizer.tokenize(text)
-
-# Main method to initiate the Scrapy Spider
-if __name__ == "__main__":
-    from scrapy.crawler import CrawlerProcess
-    from scrapy.utils.project import get_project_settings
-
-    # Setup Scrapy settings and initialize the spider
-    settings = get_project_settings()
-    process = CrawlerProcess(settings)
-    process.crawl(AdaderanaSpider)
-    process.start()
