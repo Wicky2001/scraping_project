@@ -11,7 +11,7 @@ class Spider(scrapy.Spider):
     name = "spider"
 
     # spcify the configuration file path
-    config_path = "config.json"
+    config_path = "../config.json"
 
     default_config = {
         "news_time_difference_in_hours": 12,
@@ -21,12 +21,6 @@ class Spider(scrapy.Spider):
                 "content": "div.entry-content p::text",
                 "date": "time::attr(datetime)",
                 "cover_image": "div.s-feat-holder img::attr(src)",
-            },
-            "https://sinhala.adaderana.lk/": {
-                "title": "article.news h1.news-heading::text",
-                "content": "article.news div.news-content p::text",
-                "date": "article.news p.news-datestamp::text",
-                "cover_image": "article.news div.news-banner img::attr(src)",
             },
         },
     }
