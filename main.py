@@ -41,10 +41,9 @@ if __name__ == "__main__":
     # Run the spider in a separate process
     run_spider_in_process()
 
-    # Uncomment and use the scheduling if needed to run the spider periodically
     # schedule.every(6).hours.do(run_spider_in_process)
+    schedule.every(10).minutes.do(run_spider_in_process)
 
-    # While loop to keep the script running and check the schedule
-    # while True:
-    #     schedule.run_pending()
-    #     time.sleep(1)
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
