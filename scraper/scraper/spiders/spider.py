@@ -11,10 +11,12 @@ class Spider(scrapy.Spider):
     name = "spider"
 
     # spcify the configuration file path
-    config_path = "../config.json"
+    config_path = "config.json"
 
     default_config = {
         "news_time_difference_in_hours": 12,
+        "main_links_save_location": "main_links.txt",
+        "sub_links_save_locattion": "article_links.txt",
         "parsing_rules": {
             "https://www.itnnews.lk/": {
                 "title": "div.single-header-content h1.fw-headline::text",
@@ -38,6 +40,8 @@ class Spider(scrapy.Spider):
         if (
             "news_time_difference_in_hours" not in config
             or "parsing_rules" not in config
+            or "main_links_save_location" not in config
+            or "sub_links_save_locattion" not in config
         ):
             raise KeyError(
                 "Missing required keys in config.json. Using default settings."
@@ -51,6 +55,8 @@ class Spider(scrapy.Spider):
     start_urls = list(config.get("parsing_rules", {}).keys())
     news_time_difference_in_hours = config["news_time_difference_in_hours"]
     parsing_rules = config["parsing_rules"]
+    main_links_save_location = config["main_links_save_location"]
+    sub_links_save_locattion = config["main_links_save_location"]
 
     def start_requests(self):
         for url in self.start_urls:
@@ -64,7 +70,7 @@ class Spider(scrapy.Spider):
     def parse_main_links(self, response, source):
         main_links = response.css("a::attr(href)").getall()
         filtered_links = self.filter_social_links(main_links)
-        self.save_links_to_file(filtered_links, "mainlinks.txt")
+        self.save_links_to_file(filtered_links, self.main_links_save_location)
 
         for link in filtered_links:
             yield scrapy.Request(
@@ -76,7 +82,7 @@ class Spider(scrapy.Spider):
         full_links_raw = [response.urljoin(link) for link in article_links]
         full_links_cleaned = self.filter_social_links(full_links_raw)
 
-        self.save_links_to_file(full_links_cleaned, "article_links.txt")
+        self.save_links_to_file(full_links_cleaned, self.sub_links_save_locattion)
 
         for link in full_links_cleaned:
             yield scrapy.Request(

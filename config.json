@@ -1,5 +1,7 @@
 {
   "news_time_difference_in_hours": 12,
+  "main_links_save_location": "results/scraped_links/main_links.txt",
+  "sub_links_save_locattion": "results/scraped_links/article_links.txt",
   "parsing_rules": {
     "https://sinhala.adaderana.lk/": {
       "title": "article.news h1.news-heading::text",
