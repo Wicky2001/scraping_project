@@ -1,0 +1,32 @@
+[
+  {
+    "group_id": "group_1",
+    "representative_title": "Breaking News: Major Incident in Colombo",
+    "articles": [
+      {
+        "title": "Breaking News: Major Incident in Colombo",
+        "url": "https://newswebsite.lk/article123",
+        "cover_image": "https://newswebsite.lk/images/article123.jpg",
+        "date_published": "2025-03-04T08:00:00Z",
+        "content": "Full text of the article goes here...",
+        "source": "https://newswebsite.lk"
+      },
+      {
+        "title": "Colombo in Turmoil: Incident Updates",
+        "url": "https://anothernews.lk/article567",
+        "cover_image": "https://anothernews.lk/images/article567.jpg",
+        "date_published": "2025-03-04T08:15:00Z",
+        "content": "Detailed coverage of the incident...",
+        "source": "https://anothernews.lk"
+      }
+    ]
+  },
+  {
+    "title": "Local Festival Celebrated Across the Island",
+    "url": "https://newswebsite.lk/article124",
+    "cover_image": "https://newswebsite.lk/images/article124.jpg",
+    "date_published": "2025-03-04T07:30:00Z",
+    "content": "Full article text for the festival coverage...",
+    "source": "https://newswebsite.lk"
+  }
+]

@@ -3,11 +3,10 @@ import datetime
 import os
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.cluster import DBSCAN
-import pytz
 from sinling import SinhalaTokenizer
 
 
-def process_with_nlp(results_json_file_location, output_folder_path):
+def cluster_articles(results_json_file_location, output_folder_path):
     with open(results_json_file_location, "r", encoding="utf-8") as file:
         all_articles = json.load(file)
 
@@ -36,13 +35,16 @@ def process_with_nlp(results_json_file_location, output_folder_path):
         "ඉන්",
         "අද",
     ]
+
     # Remove duplicate content from articles before clustering
-    unique_articles = {article["title"]: article for article in all_articles}.values()
+    unique_articles_1 = {article["title"]: article for article in all_articles}.values()
 
     # Combine title and content for context from both sources
     documents = [
-        f"{article['title']} {article['content']}" for article in unique_articles
+        f"{article['title']} {article['content']}" for article in unique_articles_1
     ]
+
+    print("documents = ", documents)
 
     # Vectorize the articles using TF-IDF with Sinhala stopwords and tokenization
     vectorizer = TfidfVectorizer(
@@ -51,6 +53,8 @@ def process_with_nlp(results_json_file_location, output_folder_path):
         ngram_range=(1, 2),  # Use unigrams and bigrams for better context
     )
     tfidf_matrix = vectorizer.fit_transform(documents)
+
+    print("tf idf matrix = ", tfidf_matrix)
 
     # Use DBSCAN to cluster articles based on similarity
     dbscan = DBSCAN(eps=0.5, min_samples=2, metric="cosine")
@@ -74,8 +78,13 @@ def process_with_nlp(results_json_file_location, output_folder_path):
                 }
             grouped_articles[group_id]["articles"].append(article)
 
+    # print("unique_article = ", unique_articles)
+    # print("grouped articles = ", grouped_articles)
+
     # Combine grouped articles and unique articles into the final output
     all_grouped_data = list(grouped_articles.values())
+
+    print("grouped data = ", all_grouped_data)
     for unique_article in unique_articles:
         all_grouped_data.append(unique_article)
 
@@ -113,6 +122,8 @@ def process_with_nlp(results_json_file_location, output_folder_path):
                 }
             )
 
+    print("out_put_data = **************", output_data)
+
     # Save the processed data to a JSON file in the desired format
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
 
@@ -128,15 +139,16 @@ def process_with_nlp(results_json_file_location, output_folder_path):
     if not_found_message:
         print("\n".join(not_found_message))
 
-    # Save raw data before processing
-    raw_timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
-    raw_filename = f"raw_news_data_{raw_timestamp}.json"
-    with open(raw_filename, "w", encoding="utf-8") as f:
-        json.dump(all_articles, f, ensure_ascii=False, indent=4)
-    print(f"Raw news data saved to {raw_filename}")
+    # # Save raw data before processing
+    # raw_timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
+    # raw_filename = f"raw_news_data_{raw_timestamp}.json"
+    # with open(raw_filename, "w", encoding="utf-8") as f:
+    #     json.dump(all_articles, f, ensure_ascii=False, indent=4)
+    # print(f"Raw news data saved to {raw_filename}")
 
 
 def tokenize_sinhala(text):
     # Tokenize using the Sinhala Tokenizer
     tokenizer = SinhalaTokenizer()
+    # print("tokernizers = ", tokenizer.tokenize(text))
     return tokenizer.tokenize(text)
