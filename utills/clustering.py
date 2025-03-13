@@ -44,7 +44,7 @@ def cluster_articles(results_json_file_location, output_folder_path):
         f"{article['title']} {article['content']}" for article in unique_articles_1
     ]
 
-    print("documents = ", documents)
+    # print("documents = ", documents)
 
     # Vectorize the articles using TF-IDF with Sinhala stopwords and tokenization
     vectorizer = TfidfVectorizer(
@@ -54,7 +54,7 @@ def cluster_articles(results_json_file_location, output_folder_path):
     )
     tfidf_matrix = vectorizer.fit_transform(documents)
 
-    print("tf idf matrix = ", tfidf_matrix)
+    # print("tf idf matrix = ", tfidf_matrix)
 
     # Use DBSCAN to cluster articles based on similarity
     dbscan = DBSCAN(eps=0.5, min_samples=2, metric="cosine")
@@ -122,7 +122,7 @@ def cluster_articles(results_json_file_location, output_folder_path):
                 }
             )
 
-    print("out_put_data = **************", output_data)
+    # print("out_put_data = **************", output_data)
 
     # Save the processed data to a JSON file in the desired format
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
@@ -133,7 +133,7 @@ def cluster_articles(results_json_file_location, output_folder_path):
     with open(output_file_path, "w", encoding="utf-8") as f:
         json.dump(output_data, f, ensure_ascii=False, indent=4)
 
-    print(f"Processed news data saved to {filename}")
+    # print(f"Processed news data saved to {filename}")
 
     # Log the message when no matching news is found
     if not_found_message:
