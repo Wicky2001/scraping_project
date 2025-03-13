@@ -71,15 +71,9 @@ def run_spider_in_process():
     # scrape sites and save raw data
     scraped_result_json = run_spider()
     # print("scraped_file_location ======> ", scraped_file)
-    if os.path.exists(scraped_result_json):
-        print(f"Clustering articles from: {scraped_result_json}")
 
-        # cluster raw data
-        clusterd_json = cluster_articles(
-            scraped_result_json, "results/clusterd_articles"
-        )
-    else:
-        print("Error: Scraped JSON file not found!")
+    # cluster raw data
+    clusterd_json = cluster_articles(scraped_result_json, "results/clusterd_articles")
 
     # summerize_articles(clusterd_json, "results/summerized_articles")  # need to check
 
