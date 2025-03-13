@@ -146,6 +146,8 @@ def cluster_articles(results_json_file_location, output_folder_path):
     #     json.dump(all_articles, f, ensure_ascii=False, indent=4)
     # print(f"Raw news data saved to {raw_filename}")
 
+    return output_file_path
+
 
 def tokenize_sinhala(text):
     # Tokenize using the Sinhala Tokenizer

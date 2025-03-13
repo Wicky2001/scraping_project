@@ -4,7 +4,7 @@ import multiprocessing
 from scrapy.crawler import CrawlerProcess
 from scraper.scraper.spiders.spider import Spider
 from datetime import datetime
-from utills import cluster_articles
+from utills import cluster_articles, summerize_articles
 import os
 
 
@@ -35,13 +35,20 @@ def run_spider_in_process():
     p.start()
     p.join()
 
-    scraped_file = run_spider()
+    # scrape sites and save raw data
+    scraped_result_json = run_spider()
     # print("scraped_file_location ======> ", scraped_file)
-    if os.path.exists(scraped_file):
-        print(f"Clustering articles from: {scraped_file}")
-        cluster_articles(scraped_file, "results/clusterd_articles")
+    if os.path.exists(scraped_result_json):
+        print(f"Clustering articles from: {scraped_result_json}")
+
+        # cluster raw data
+        clusterd_json = cluster_articles(
+            scraped_result_json, "results/clusterd_articles"
+        )
     else:
         print("Error: Scraped JSON file not found!")
+
+    # summerize_articles(clusterd_json, "results/summerized_articles")  # need to check
 
 
 if __name__ == "__main__":
