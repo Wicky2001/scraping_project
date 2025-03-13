@@ -1,4 +1,5 @@
 {
+  "use_proxies": "True",
   "news_time_difference_in_hours": 12,
   "main_links_save_location": "results/scraped_links/main_links.txt",
   "sub_links_save_locattion": "results/scraped_links/article_links.txt",

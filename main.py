@@ -6,14 +6,24 @@ from scraper.scraper.spiders.spider import Spider
 from datetime import datetime
 from utills import cluster_articles, summerize_articles
 import os
+import json
 
 
 def run_spider():
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_filename = f"results/raw_articles/scraped_results_{timestamp}.json"
+    try:
+        # Step 1: Load config.json
+        with open("config.json", "r", encoding="utf-8") as file:
+            config = json.load(file)
 
-    process = CrawlerProcess(
-        {
+        # Step 2: Convert "use_proxies" string to boolean
+        use_proxies = config.get("use_proxies", "False").lower() == "true"
+
+        # Step 3: Generate timestamped output file
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        output_filename = f"results/raw_articles/scraped_results_{timestamp}.json"
+
+        # Step 4: Set Scrapy settings dynamically
+        scrapy_settings = {
             "FEEDS": {
                 output_filename: {
                     "format": "json",
@@ -22,12 +32,35 @@ def run_spider():
                 },
             }
         }
-    )
 
-    process.crawl(Spider)
-    process.start()
+        # Step 5: Enable proxy settings if use_proxies is True
+        if use_proxies:
+            scrapy_settings.update(
+                {
+                    "DOWNLOADER_MIDDLEWARES": {
+                        "rotating_proxies.middlewares.RotatingProxyMiddleware": 610,
+                        "rotating_proxies.middlewares.BanDetectionMiddleware": 620,
+                    },
+                    "ROTATING_PROXY_LIST_PATH": "proxies.txt",
+                }
+            )
 
-    return output_filename
+        # Step 6: Start Scrapy with the dynamic settings
+        process = CrawlerProcess(scrapy_settings)  # Pass dynamic settings
+        process.crawl(Spider)
+        process.start()
+
+        return output_filename  # Return the dynamically created file
+
+    except FileNotFoundError:
+        print("Error: config.json not found!")
+        return None
+    except json.JSONDecodeError:
+        print("Error: config.json contains invalid JSON!")
+        return None
+    except Exception as e:
+        print(f"Unexpected Error: {e}")
+        return None
 
 
 def run_spider_in_process():
