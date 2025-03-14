@@ -65,7 +65,7 @@ def cluster_articles(results_json_file_location, output_folder_path):
     unique_articles = []
     not_found_message = []
 
-    for label, article in zip(labels, unique_articles):
+    for label, article in zip(labels, unique_articles_1):
         if label == -1:  # Label -1 means outlier, no group (unique article)
             unique_articles.append(article)
         else:
