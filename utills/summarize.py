@@ -4,41 +4,46 @@ import datetime
 from dotenv import load_dotenv
 import openai
 
+# Load API key from .env
 load_dotenv()
-openai.api_key = os.getenv("OPENAI_API_KEY")
+deepseek_api_key = os.getenv("DEEPSEEK_API_KEY")
+
+# Initialize OpenAI client for DeepSeek
+client = openai.OpenAI(api_key=deepseek_api_key, base_url="https://api.deepseek.com/v1")
 
 
 def generate_summary(text, is_grouped=False):
-    """Use GPT-3.5 to generate a summary for an article or a group of articles."""
+    """Use DeepSeek API to generate a summary for an article or a group of articles."""
     try:
-        prompt = f"Summarize the following {'collection of news articles' if is_grouped else 'news article'} in 2-3 sentences:\n\n{text}"
+        prompt = f"Summarize the following. The summery must be also in provided language.Which is sinhala  {'collection of news articles' if is_grouped else 'news article'} in 2-3 sentences:\n\n{text}"
 
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo", messages=[{"role": "user", "content": prompt}]
+        response = client.chat.completions.create(
+            model="deepseek-chat",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7,
         )
 
-        return response["choices"][0]["message"]["content"]
+        return response.choices[0].message.content
 
     except Exception as e:
-        print(f" Error generating summary: {e}")
+        print(f"Error generating summary: {e}")
         return "Summary not available due to an error."
 
 
-def summerize_articles(json_file_path, output_folder):
+def summarize_articles(json_file_path, output_folder):
     """
     Load articles from a JSON file, process them, and save the final structured JSON.
-    json_file_path: input json file path which contain clusterd news
-    output_folder : folder path where results going to save
+    json_file_path: input json file path which contains clustered news
+    output_folder: folder path where results will be saved
     """
     try:
-        # Ensure the file exists before attempting to open
         if not os.path.exists(json_file_path):
             raise FileNotFoundError(f"File '{json_file_path}' does not exist.")
 
         # Load JSON file
         with open(json_file_path, "r", encoding="utf-8") as file:
             try:
-                articles = json.load(file)  # Ensure it's a list
+                articles = json.load(file)
             except json.JSONDecodeError as e:
                 raise ValueError(f"Invalid JSON format: {e}")
 
@@ -56,7 +61,6 @@ def summerize_articles(json_file_path, output_folder):
                     )
                     summary = generate_summary(combined_text, is_grouped=True)
 
-                    # Create the final grouped article structure
                     processed_data.append(
                         {
                             "group_id": item["group_id"],
@@ -69,7 +73,6 @@ def summerize_articles(json_file_path, output_folder):
                     # Unique articles: Summarize individually
                     summary = generate_summary(item["content"])
 
-                    # Create the final unique article structure
                     processed_data.append(
                         {
                             "title": item["title"],
@@ -82,9 +85,9 @@ def summerize_articles(json_file_path, output_folder):
                         }
                     )
             except KeyError as ke:
-                print(f" Missing key in article data: {ke}")
+                print(f"Missing key in article data: {ke}")
             except Exception as e:
-                print(f" Error processing article: {e}")
+                print(f"Error processing article: {e}")
 
         # Generate a unique filename with timestamp
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
@@ -98,12 +101,12 @@ def summerize_articles(json_file_path, output_folder):
         with open(output_filepath, "w", encoding="utf-8") as file:
             json.dump(processed_data, file, ensure_ascii=False, indent=4)
 
-        print(f" Final processed news data saved to '{output_filepath}'")
+        print(f"Final processed news data saved to '{output_filepath}'")
         return output_filepath
 
     except FileNotFoundError as fnf_error:
-        print(f" Error: {fnf_error}")
+        print(f"Error: {fnf_error}")
     except ValueError as ve:
-        print(f" Error: {ve}")
+        print(f"Error: {ve}")
     except Exception as e:
-        print(f" Unexpected error: {e}")
+        print(f"Unexpected error: {e}")
