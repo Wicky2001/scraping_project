@@ -1,156 +1,99 @@
 import json
-import datetime
 import os
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.cluster import DBSCAN
-from sinling import SinhalaTokenizer
+import datetime
+from dotenv import load_dotenv
+import openai
+
+# Load API key from .env
+load_dotenv()
+deepseek_api_key = os.getenv("DEEPSEEK_API_KEY")
+
+# Initialize OpenAI client for DeepSeek
+client = openai.OpenAI(api_key=deepseek_api_key, base_url="https://api.deepseek.com/v1")
 
 
-def cluster_articles(results_json_file_location, output_folder_path):
-    with open(results_json_file_location, "r", encoding="utf-8") as file:
-        all_articles = json.load(file)
+def cluster_articles(json_file_path, output_folder):
+    # Open and load JSON data
+    with open(json_file_path, "r", encoding="utf-8") as file:
+        try:
+            articles = json.load(file)  # Loading the list of articles
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Invalid JSON format: {e}")
 
-    SINHALA_STOPWORDS = [
-        "ඔබ",
-        "ඉතා",
-        "එය",
-        "ද",
-        "එක",
-        "ම",
-        "නමුත්",
-        "සහ",
-        "අප",
-        "මට",
-        "නැහැ",
-        "ය",
-        "ඇත",
-        "එහි",
-        "සඳහා",
-        "හෝ",
-        "නමුදු",
-        "එක්",
-        "මෙම",
-        "ඔහු",
-        "විසින්",
-        "ඉන්",
-        "අද",
+    # Prepare the prompt for clustering the articles
+    prompt = f"""
+    I will give you a list containing rows of scraped news articles in the following format:
+
+    Example Structure:
+    [
+      {{
+        "title": "Breaking News: Major Incident in Colombo",
+        "url": "https://newswebsite.lk/article123",
+        "cover_image": "https://newswebsite.lk/images/article123.jpg",
+        "date_published": "2025-03-04T08:00:00Z",
+        "content": "Full text of the article goes here...",
+        "source": "https://newswebsite.lk"
+      }},
+      {{
+        "title": "Local Festival Celebrated Across the Island",
+        "url": "https://newswebsite.lk/article124",
+        "cover_image": "https://newswebsite.lk/images/article124.jpg",
+        "date_published": "2025-03-04T07:30:00Z",
+        "content": "Full article text for the festival coverage...",
+        "source": "https://newswebsite.lk"
+      }}
     ]
 
-    # Remove duplicate content from articles before clustering
-    unique_articles_1 = {article["title"]: article for article in all_articles}.values()
+    Now, I want you to classify these articles according to the format I'll provide, which includes grouping similar articles together and marking unique articles. Articles that do not meet the similarity threshold should remain as unique entries.
 
-    # Combine title and content for context from both sources
-    documents = [
-        f"{article['title']} {article['content']}" for article in unique_articles_1
+    Example Structure:
+    [
+      {{
+        "group_id": "group_1",
+        "representative_title": "Breaking News: Major Incident in Colombo",
+        "articles": [
+          {{
+            "title": "Breaking News: Major Incident in Colombo",
+            "url": "https://newswebsite.lk/article123",
+            "cover_image": "https://newswebsite.lk/images/article123.jpg",
+            "date_published": "2025-03-04T08:00:00Z",
+            "content": "Full text of the article goes here...",
+            "source": "https://newswebsite.lk"
+          }},
+          {{
+            "title": "Colombo in Turmoil: Incident Updates",
+            "url": "https://anothernews.lk/article567",
+            "cover_image": "https://anothernews.lk/images/article567.jpg",
+            "date_published": "2025-03-04T08:15:00Z",
+            "content": "Detailed coverage of the incident...",
+            "source": "https://anothernews.lk"
+          }}
+        ]
+      }},
+      {{
+        "title": "Local Festival Celebrated Across the Island",
+        "url": "https://newswebsite.lk/article124",
+        "cover_image": "https://newswebsite.lk/images/article124.jpg",
+        "date_published": "2025-03-04T07:30:00Z",
+        "content": "Full article text for the festival coverage...",
+        "source": "https://newswebsite.lk"
+      }}
     ]
 
-    # print("documents = ", documents)
+    This is the real set of data: {articles}
 
-    # Vectorize the articles using TF-IDF with Sinhala stopwords and tokenization
-    vectorizer = TfidfVectorizer(
-        tokenizer=tokenize_sinhala,
-        stop_words=SINHALA_STOPWORDS,
-        ngram_range=(1, 2),  # Use unigrams and bigrams for better context
+    Please cluster the articles and return the result in JSON format only. Do not include any additional text.
+    """
+
+    # Sending the prompt to the Deep Seek API for completion
+    response = client.chat.completions.create(
+        model="deepseek-chat",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.7,
     )
-    tfidf_matrix = vectorizer.fit_transform(documents)
 
-    # print("tf idf matrix = ", tfidf_matrix)
+    # Print the response content (the clustered articles)
+    print(response.choices[0].message.content)
 
-    # Use DBSCAN to cluster articles based on similarity
-    dbscan = DBSCAN(eps=0.5, min_samples=2, metric="cosine")
-    labels = dbscan.fit_predict(tfidf_matrix)
-
-    # Group articles by their labels
-    grouped_articles = {}
-    unique_articles = []
-    not_found_message = []
-
-    for label, article in zip(labels, unique_articles):
-        if label == -1:  # Label -1 means outlier, no group (unique article)
-            unique_articles.append(article)
-        else:
-            group_id = f"group_{label}"
-            if group_id not in grouped_articles:
-                grouped_articles[group_id] = {
-                    "group_id": group_id,
-                    "representative_title": article["title"],
-                    "articles": [],
-                }
-            grouped_articles[group_id]["articles"].append(article)
-
-    # print("unique_article = ", unique_articles)
-    # print("grouped articles = ", grouped_articles)
-
-    # Combine grouped articles and unique articles into the final output
-    all_grouped_data = list(grouped_articles.values())
-
-    print("grouped data = ", all_grouped_data)
-    for unique_article in unique_articles:
-        all_grouped_data.append(unique_article)
-
-    # Format the grouped output in the desired structure
-    output_data = []
-    for group in all_grouped_data:
-        if "articles" in group:
-            # Grouped articles
-            group_data = {
-                "group_id": group["group_id"],
-                "representative_title": group["representative_title"],
-                "articles": [
-                    {
-                        "title": article["title"],
-                        "url": article["url"],
-                        "cover_image": article["cover_image"],
-                        "date_published": article["date_published"],
-                        "content": article["content"],
-                        "source": article["source"],
-                    }
-                    for article in group["articles"]
-                ],
-            }
-            output_data.append(group_data)
-        else:
-            # Unique article (not grouped)
-            output_data.append(
-                {
-                    "title": group["title"],
-                    "url": group["url"],
-                    "cover_image": group["cover_image"],
-                    "date_published": group["date_published"],
-                    "content": group["content"],
-                    "source": group["source"],
-                }
-            )
-
-    # print("out_put_data = **************", output_data)
-
-    # Save the processed data to a JSON file in the desired format
-    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
-
-    filename = f"processed_news_data_{timestamp}_clusterd.json"
-    output_file_path = os.path.join(output_folder_path, filename)
-
-    with open(output_file_path, "w", encoding="utf-8") as f:
-        json.dump(output_data, f, ensure_ascii=False, indent=4)
-
-    # print(f"Processed news data saved to {filename}")
-
-    # Log the message when no matching news is found
-    if not_found_message:
-        print("\n".join(not_found_message))
-
-    # # Save raw data before processing
-    # raw_timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
-    # raw_filename = f"raw_news_data_{raw_timestamp}.json"
-    # with open(raw_filename, "w", encoding="utf-8") as f:
-    #     json.dump(all_articles, f, ensure_ascii=False, indent=4)
-    # print(f"Raw news data saved to {raw_filename}")
-
-    return output_file_path
-
-
-def tokenize_sinhala(text):
-    # Tokenize using the Sinhala Tokenizer
-    tokenizer = SinhalaTokenizer()
-    # print("tokernizers = ", tokenizer.tokenize(text))
-    return tokenizer.tokenize(text)
+    # Return the clustered articles in JSON format
+    return response.choices[0].message.content
