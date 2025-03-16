@@ -17,7 +17,10 @@ def extract_titles(results_json_file_location):
     titles = []
 
     for article in all_articles:
-        titles.append(article["title"])
+        if article["title"] not in titles:
+            titles.append(article["title"])
+
+    print(titles)
 
 
     # print(titles)
@@ -29,11 +32,30 @@ def cluster_titles(results_json_file_location):
 
     prompt = f"""
 
-this {titles} is set of sinhla news articles extract from various news websites, I want to cluster them, articles which has similar meaning must have similar group id, article which are unique must label as unique
+You are given a list of Sinhala news article titles extracted from various news websites:
 
-you must give a list like below
+{titles}
 
-[(title1,group_1), (title2,group_2), (title3,group_1), title4,unique)]. give me the output exact to this format. just give me only the list as answer
+Your task is to cluster these titles based on their **semantic similarity**.
+
+ **Instructions:**
+- Titles with **similar or identical meanings** should be assigned the same group ID (e.g., 'group_1', 'group_2', etc.).
+- If a title is **unique** and does **not semantically match** any other title, label it as `'unique'`.
+- **Do NOT assign a group ID to unique/unrelated titles.**
+
+**Output format (mandatory):**
+[
+    (title1, 'group_1'),
+    (title2, 'group_2'),
+    (title3, 'group_1'),
+    (title4, 'unique'),
+    ...
+]
+
+ **Important:**
+- Only cluster titles with **clear and strong semantic similarity**.
+- Do not force unrelated titles into the same group.
+- Return only the list, no extra text or explanation.
 
 """
     
@@ -91,13 +113,15 @@ def cluster_articles(results_json_file_location,output_folder):
 
     # Add articles to their respective groups
     for article in full_articles:
-        title = article["title"]
-        if title in title_to_group:
-            group = title_to_group[title]
-            grouped_dict[group]["articles"].append(article)
-        else:
-            # If the article is unique, add it as a standalone entry
-            grouped_dict[title] = article
+            title = article["title"]
+            if title in title_to_group:
+                group = title_to_group[title]
+                # Check if the article is already in the group
+                if not any(a["title"] == article["title"] for a in grouped_dict[group]["articles"]):
+                    grouped_dict[group]["articles"].append(article)
+            else:
+                # If the article is unique, add it as a standalone entry
+                grouped_dict[title] = article
 
     # Convert the dictionary to a list
     result = []
