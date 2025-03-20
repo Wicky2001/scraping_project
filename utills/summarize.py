@@ -13,9 +13,14 @@ client = openai.OpenAI(api_key=deepseek_api_key, base_url="https://api.deepseek.
 
 
 def generate_summary(text, is_grouped=False):
-    """Use DeepSeek API to generate a summary for an article or a group of articles."""
+    """Use DeepSeek API to generate a professional news lead for an article or a group of articles."""
     try:
-        prompt = f"Summarize the following. The summery must be also in provided language.Which is sinhala  {'collection of news articles' if is_grouped else 'news article'} in 2-3 sentences:\n\n{text}"
+        prompt = (
+            f"Write an effective news lead in Sinhala for the following {'collection of news articles' if is_grouped else 'news article'}. "
+            "The lead must be a single sentence, ideally 20-25 words long, and should deliver a sharp statement of the story's essential facts. "
+            "Balance maximum information with readability. Focus on summarizing the most significant details, addressing as many of the five Ws (Who, What, When, Where, Why) as possible.\n\n"
+            f"{text}"
+        )
 
         response = client.chat.completions.create(
             model="deepseek-chat",
@@ -26,8 +31,8 @@ def generate_summary(text, is_grouped=False):
         return response.choices[0].message.content
 
     except Exception as e:
-        print(f"Error generating summary: {e}")
-        return "Summary not available due to an error."
+        print(f"Error generating news lead: {e}")
+        return "News lead not available due to an error."
 
 
 def summarize_articles(json_file_path, output_folder):
