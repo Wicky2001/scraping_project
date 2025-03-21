@@ -3,6 +3,7 @@ import os
 import datetime
 from dotenv import load_dotenv
 import openai
+from tqdm import tqdm
 
 # Load API key from .env
 load_dotenv()
@@ -35,6 +36,9 @@ def generate_summary(text, is_grouped=False):
         return "News lead not available due to an error."
 
 
+# Progress bar library
+
+
 def summarize_articles(json_file_path, output_folder):
     """
     Load articles from a JSON file, process them, and save the final structured JSON.
@@ -56,8 +60,10 @@ def summarize_articles(json_file_path, output_folder):
             raise ValueError("The JSON file must contain a list of articles.")
 
         processed_data = []
+        print("Summarization started...")
 
-        for item in articles:
+        # Wrap articles with tqdm for progress bar
+        for item in tqdm(articles, desc="Processing articles", unit="article"):
             try:
                 if "group_id" in item:
                     # Grouped articles: Merge content from all articles

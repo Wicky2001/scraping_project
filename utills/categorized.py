@@ -1,8 +1,8 @@
 import json
 import os
-import datetime
 from dotenv import load_dotenv
 import openai
+from tqdm import tqdm
 
 # Load API key from .env
 load_dotenv()
@@ -51,15 +51,19 @@ def assign_category(json_file_path):
         if not isinstance(articles, list):
             raise ValueError("The JSON file must contain a list of articles.")
 
-        # Process each article
-        for article in articles:
-            try:
-                category = generate_category(article["content"])
-                article["category"] = category
-            except KeyError as ke:
-                print(f"Missing key in article data: {ke}")
-            except Exception as e:
-                print(f"Error processing article: {e}")
+        # Process each article with progress bar
+        with tqdm(
+            total=len(articles), desc="Assigning categories", unit="article"
+        ) as pbar:
+            for article in articles:
+                try:
+                    category = generate_category(article["content"])
+                    article["category"] = category
+                except KeyError as ke:
+                    print(f"Missing key in article data: {ke}")
+                except Exception as e:
+                    print(f"Error processing article: {e}")
+                pbar.update(1)
 
         # Save the updated articles back to the same JSON file
         with open(json_file_path, "w", encoding="utf-8") as file:

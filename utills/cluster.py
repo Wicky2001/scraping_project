@@ -41,33 +41,32 @@ def remove_duplicates_by_title(data):
 def cluster_titles(results_json_file_location):
     titles, all_articles = extract_titles(results_json_file_location)
     all_articles = remove_duplicates_by_title(all_articles)
+    print(f"Extracted titles = {titles}\n\n\n")
 
     prompt = f"""
 
-You are given a list of Sinhala news article titles extracted from various news websites:
+You are provided with a list of Sinhala news article titles:
 
 {titles}
 
-Your task is to cluster these titles based on their **semantic similarity**.
+Cluster these titles based on **semantic similarity**.
 
- **Instructions:**
-- Titles with **similar or identical meanings** should be assigned the same group ID (e.g., 'group_1', 'group_2', etc.).
-- If a title is **unique** and does **not semantically match** any other title, label it as `'unique'`.
-- **Do NOT assign a group ID to unique/unrelated titles.**
+Rules:
+- Titles with similar or identical meanings should be assigned the same group ID (e.g., 'group_1', 'group_2', etc.).
+- Titles that do not semantically match any other title must be labeled as 'unique'.
+- Do NOT assign a group ID to titles labeled as 'unique'.
+- Only group titles with clear semantic similarity. Do not force unrelated titles into the same group.
 
-**Output format (mandatory):**
+Return ONLY a valid Python list in which include classification details of titles, I do not want any other mombo jusmbo.
 [
-    (title1, 'group_1'),
-    (title2, 'group_2'),
-    (title3, 'group_1'),
-    (title4, 'unique'),
+    ("title1", "group_1"),
+    ("title2", "group_1"),
+    ("title3", "group_2"),
+    ("title4", "unique"),
     ...
 ]
 
- **Important:**
-- Only cluster titles with **clear and strong semantic similarity**.
-- Do not force unrelated titles into the same group.
-- Return only the list, no extra text or explanation.
+
 
 """
 
@@ -77,7 +76,9 @@ Your task is to cluster these titles based on their **semantic similarity**.
         temperature=0.7,
     )
 
-    # print(response.choices[0].message.content, all_articles)
+    print(
+        f"{response.choices[0].message.content} ********************************************"
+    )
     return response.choices[0].message.content, all_articles
 
 
@@ -93,6 +94,7 @@ Title: {title}"""
     )
 
     cleaned_title = response.choices[0].message.content.strip()
+    # print(cleaned_title)
     return cleaned_title
 
 
@@ -140,8 +142,8 @@ def cluster_articles(results_json_file_location, output_folder):
     # Add articles to their respective groups
     for article in full_articles:
         title = article["title"]
-        print(f"title = {title}\n")
-        print(f"tittle_to_group = {title_to_group}\n\n")
+        # print(f"title = {title}")
+        # print(f"tittle_to_group = {title_to_group}\n\n")
         if title in title_to_group:
             group = title_to_group[title]
 
@@ -154,10 +156,7 @@ def cluster_articles(results_json_file_location, output_folder):
     result = []
 
     for key, value in grouped_dict.items():
-        if isinstance(value, dict) and "group_id" in value:
-            result.append(value)
-        else:
-            result.append(value)
+        result.append(value)
     # print(result)
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
     output_filename = f"clustered_articles_{timestamp}.json"
@@ -169,5 +168,7 @@ def cluster_articles(results_json_file_location, output_folder):
     # Save to JSON file
     with open(output_filepath, "w", encoding="utf-8") as file:
         json.dump(result, file, ensure_ascii=False, indent=4)
+
+    print(f"clusterd results is saved to = {output_filepath}")
 
     return output_filepath

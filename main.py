@@ -4,7 +4,7 @@ from multiprocessing import Process, Queue
 from scrapy.crawler import CrawlerProcess
 from scraper.scraper.spiders.spider import Spider
 from datetime import datetime
-from utills import cluster_articles, summarize_articles
+from utills import cluster_articles, summarize_articles, assign_category
 import json
 
 
@@ -61,6 +61,7 @@ def run_spider_in_process():
     scraped_result_json = queue.get()  #
     if scraped_result_json:
         print("Scraped file location:", scraped_result_json)
+        scraped_result_json = assign_category(scraped_result_json)
 
         clustered_json = cluster_articles(
             scraped_result_json, "results/clusterd_articles"
@@ -79,4 +80,3 @@ if __name__ == "__main__":
     while True:
         schedule.run_pending()
         time.sleep(1)
-
