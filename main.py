@@ -4,7 +4,7 @@ from multiprocessing import Process, Queue
 from scrapy.crawler import CrawlerProcess
 from scraper.scraper.spiders.spider import Spider
 from datetime import datetime
-from utills import cluster_articles, summarize_articles, assign_category
+from utills import cluster_articles, summarize_articles, assign_category, insert_data
 import json
 
 
@@ -67,7 +67,11 @@ def run_spider_in_process():
             scraped_result_json, "results/clusterd_articles"
         )
 
-        summarize_articles(clustered_json, "results/summarized_articles")
+        summerized_json = summarize_articles(
+            clustered_json, "results/summarized_articles"
+        )
+        insert_data(summerized_json)
+
     else:
         print("Failed to scrape articles.")
 

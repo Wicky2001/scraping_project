@@ -40,7 +40,7 @@ def remove_duplicates_by_title(data):
 
 def cluster_titles(results_json_file_location):
     titles, all_articles = extract_titles(results_json_file_location)
-    all_articles = remove_duplicates_by_title(all_articles)
+    unique_articles = remove_duplicates_by_title(all_articles)
     print(f"Extracted titles = {titles}\n\n\n")
 
     prompt = f"""
@@ -79,7 +79,7 @@ Return ONLY a valid Python list in which include classification details of title
     print(
         f"{response.choices[0].message.content} ********************************************"
     )
-    return response.choices[0].message.content, all_articles
+    return response.choices[0].message.content, unique_articles
 
 
 def clean_title(title):
@@ -100,7 +100,7 @@ Title: {title}"""
 
 def convert_to_list(text):
     # Regex pattern to capture individual tuples as strings
-    # Regex pattern to capture tuples in text
+
     pattern = r'\("(.+?)",\s*"(.*?)"\)'
     matches = re.findall(pattern, text, re.DOTALL)
 
