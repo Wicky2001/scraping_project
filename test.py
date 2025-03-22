@@ -1,9 +1,19 @@
-from utills import cluster_articles, summarize_articles, extract_titles, assign_category
-
-clustered_json = cluster_articles(
-    r"results\clusterd_articles\clustered_articles_20250321_1844.json",
-    r"results\clusterd_articles",
+from utills import (
+    cluster_articles,
+    summarize_articles,
+    extract_titles,
+    assign_category,
+    remove_duplicates_by_title,
+    insert_data,
 )
+
+# clustered_json = cluster_articles(
+#     r"results\clusterd_articles\clustered_articles_20250321_1844.json",
+#     r"results\clusterd_articles",
+# )
+
+# remove_duplicates_by_title(r"results\raw_articles\scraped_results_20250321_192657.json")
+insert_data(r"results\summarized_articles\final_news_data_20250321_2158.json")
 # summarize_articles(clustered_json, "results/summarized_articles")
 
 # extract_titles(r"results\raw_articles\scraped_results_20250316_133509.json")

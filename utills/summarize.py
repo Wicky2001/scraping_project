@@ -93,6 +93,7 @@ def summarize_articles(json_file_path, output_folder):
                             "date_published": item["date_published"],
                             "content": item["content"],
                             "source": item["source"],
+                            "category": item["category"],
                         }
                     )
             except KeyError as ke:

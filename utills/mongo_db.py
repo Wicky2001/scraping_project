@@ -16,7 +16,6 @@ def insert_data(json_file_path):
         if not os.path.exists(json_file_path):
             raise FileNotFoundError(f"File '{json_file_path}' does not exist.")
 
-        # Load JSON file
         with open(json_file_path, "r", encoding="utf-8") as file:
             try:
                 articles = json.load(file)
@@ -28,34 +27,39 @@ def insert_data(json_file_path):
 
         db = get_db()
 
-        # Initialize tqdm progress bar
+        # Calculate total inserts upfront (excluding empty groups)
         total_items = sum(
-            len(article.get("articles", [])) if "group_id" in article else 1
+            len(article.get("articles", []))
+            if article.get("group_id") and article.get("articles")
+            else 1
             for article in articles
+            if not (article.get("group_id") and not article.get("articles"))
         )
+
         with tqdm(total=total_items, desc="Inserting articles", unit="article") as pbar:
             for article in articles:
-                if "group_id" in article:
-                    # For grouped articles, assign the group summary to each sub-article
-                    summary = article.get("summary", "")
+                if article.get("group_id"):
+                    group_id = article.get("group_id")
                     articles_of_group = article.get("articles", [])
-                    for article_ in articles_of_group:
-                        article_["summary"] = summary
-                        collection = db[article_["category"]]
-                        collection.insert_one(article_)
-                        pbar.update(1)
+                    if articles_of_group:  # Only insert if the group has articles
+                        summary = article.get("summary", "")
+                        for sub_article in articles_of_group:
+                            sub_article["summary"] = summary
+                            sub_article["group_id"] = group_id
+                            collection = db[sub_article["category"]]
+                            collection.insert_one(sub_article)
+                            pbar.update(1)
                 else:
-                    # For individual articles
+                    # Process individual articles
                     collection = db[article["category"]]
                     collection.insert_one(article)
                     pbar.update(1)
 
         print("Data insertion completed successfully.")
+        return True
 
-    except FileNotFoundError as fnf_error:
-        print(f"Error: {fnf_error}")
-    except ValueError as ve:
-        print(f"Error: {ve}")
+    except (FileNotFoundError, ValueError) as e:
+        print(f"Error: {e}")
     except Exception as e:
         print(f"Unexpected error: {e}")
 
