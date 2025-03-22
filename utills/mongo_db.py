@@ -69,4 +69,4 @@ def get_category_data(category):
     collection = db[category]
     data = collection.find()
 
-    return data
+    return list(data)

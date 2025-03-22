@@ -5,6 +5,7 @@ from utills import (
     assign_category,
     remove_duplicates_by_title,
     insert_data,
+    get_category_data,
 )
 
 # clustered_json = cluster_articles(
@@ -13,8 +14,7 @@ from utills import (
 # )
 
 # remove_duplicates_by_title(r"results\raw_articles\scraped_results_20250321_192657.json")
-insert_data(r"results\summarized_articles\final_news_data_20250321_2158.json")
-# summarize_articles(clustered_json, "results/summarized_articles")
+print(get_category_data("Politics"))
 
 # extract_titles(r"results\raw_articles\scraped_results_20250316_133509.json")
 

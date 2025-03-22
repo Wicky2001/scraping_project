@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, send_file
+from flask import Flask, jsonify, request
 import schedule
 import time
 import threading
@@ -8,8 +8,15 @@ from multiprocessing import Process, Queue
 from scrapy.crawler import CrawlerProcess
 from scraper.scraper.spiders.spider import Spider
 from datetime import datetime
-from utills import cluster_articles, summarize_articles, assign_category, insert_data
+from utills import (
+    cluster_articles,
+    summarize_articles,
+    assign_category,
+    insert_data,
+    get_category_data,
+)
 import json
+from bson.json_util import dumps
 
 app = Flask(__name__)
 
@@ -117,6 +124,15 @@ def get_latest_result():
     except Exception as e:
         # Handle any exceptions that might occur
         return jsonify({"error": str(e)}), 500
+
+
+@app.route("/news", methods=["GET"])
+def get_categorized_news():
+    category = request.args.get("category", "Politics").strip()
+    data = get_category_data(str(category))
+
+    # Using bson.json_util.dumps to handle ObjectId serialization
+    return app.response_class(response=dumps(data), mimetype="application/json")
 
 
 ### Start scheduler when app starts ###
