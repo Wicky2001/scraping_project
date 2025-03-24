@@ -50,3 +50,38 @@ def remove_duplicates_by_title(json_file_path):
         print(f"Error: {ve}")
     except Exception as e:
         print(f"Unexpected error: {e}")
+
+
+def add_id_to_grouped_articles(json_file_path):
+    try:
+        if not os.path.exists(json_file_path):
+            raise FileNotFoundError(f"File '{json_file_path}' does not exist.")
+
+        with open(json_file_path, "r", encoding="utf-8") as file:
+            try:
+                articles = json.load(file)
+            except json.JSONDecodeError as e:
+                raise ValueError(f"Invalid JSON format: {e}")
+
+        if not isinstance(articles, list):
+            raise ValueError("The JSON file must contain a list of articles.")
+
+        for article in tqdm(
+            articles, desc="Assigning ids to grouped articles", unit="article"
+        ):
+            if article.get("group_id") and len(article.get("articles")) != 0:
+                article["id"] = article.get("articles")[0].get("id")
+                article["category"] = article.get("articles")[0].get("category")
+
+        with open(json_file_path, "w", encoding="utf-8") as file:
+            json.dump(articles, file, ensure_ascii=False, indent=4)
+
+        print(f"Results saved to '{json_file_path}'")
+        return json_file_path
+
+    except FileNotFoundError as fnf_error:
+        print(f"Error: {fnf_error}")
+    except ValueError as ve:
+        print(f"Error: {ve}")
+    except Exception as e:
+        print(f"Unexpected error: {e}")

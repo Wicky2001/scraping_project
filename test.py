@@ -6,15 +6,18 @@ from utills import (
     remove_duplicates_by_title,
     insert_data,
     get_category_data,
+    create_search_index,
 )
 
 # clustered_json = cluster_articles(
-#     r"results\clusterd_articles\clustered_articles_20250321_1844.json",
+#     r"results\raw_articles\scraped_results_20250324_173107.json",
 #     r"results\clusterd_articles",
 # )
 
+create_search_index()
+
 # remove_duplicates_by_title(r"results\raw_articles\scraped_results_20250321_192657.json")
-print(get_category_data("Politics"))
+# print(get_category_data("Politics"))
 
 # extract_titles(r"results\raw_articles\scraped_results_20250316_133509.json")
 

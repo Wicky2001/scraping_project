@@ -19,7 +19,7 @@ def generate_summary(text, is_grouped=False):
         prompt = (
             f"Write an effective news lead in Sinhala for the following {'collection of news articles' if is_grouped else 'news article'}. "
             "The lead must be a single sentence, ideally 20-25 words long, and should deliver a sharp statement of the story's essential facts. "
-            "Balance maximum information with readability. Focus on summarizing the most significant details, addressing as many of the five Ws (Who, What, When, Where, Why) as possible.\n\n"
+            "Balance maximum information with readability. Focus on summarizing the most significant details, addressing as many of the five Ws (Who, What, When, Where, Why) as possible.Just only give the summary. I do not want any other single things"
             f"{text}"
         )
 
@@ -59,7 +59,6 @@ def summarize_articles(json_file_path, output_folder):
         if not isinstance(articles, list):
             raise ValueError("The JSON file must contain a list of articles.")
 
-        processed_data = []
         print("Summarization started...")
 
         # Wrap articles with tqdm for progress bar
@@ -72,30 +71,12 @@ def summarize_articles(json_file_path, output_folder):
                     )
                     summary = generate_summary(combined_text, is_grouped=True)
 
-                    processed_data.append(
-                        {
-                            "group_id": item["group_id"],
-                            "representative_title": item["representative_title"],
-                            "summary": summary,
-                            "articles": item["articles"],
-                        }
-                    )
+                    item["summary"] = summary
                 else:
                     # Unique articles: Summarize individually
                     summary = generate_summary(item["content"])
 
-                    processed_data.append(
-                        {
-                            "title": item["title"],
-                            "summary": summary,
-                            "url": item["url"],
-                            "cover_image": item["cover_image"],
-                            "date_published": item["date_published"],
-                            "content": item["content"],
-                            "source": item["source"],
-                            "category": item["category"],
-                        }
-                    )
+                    item["summary"] = summary
             except KeyError as ke:
                 print(f"Missing key in article data: {ke}")
             except Exception as e:
@@ -111,7 +92,7 @@ def summarize_articles(json_file_path, output_folder):
 
         # Save to JSON file
         with open(output_filepath, "w", encoding="utf-8") as file:
-            json.dump(processed_data, file, ensure_ascii=False, indent=4)
+            json.dump(articles, file, ensure_ascii=False, indent=4)
 
         print(f"Final processed news data saved to '{output_filepath}'")
         return output_filepath

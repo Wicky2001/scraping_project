@@ -5,6 +5,7 @@ import re
 import pytz
 import os
 import json
+import uuid
 
 
 class Spider(scrapy.Spider):
@@ -98,6 +99,7 @@ class Spider(scrapy.Spider):
 
         if title and content and iso_date and not too_old:
             yield {
+                "id": self.generate_id(),
                 "title": title.strip(),
                 "url": response.url,
                 "cover_image": cover_image_url,
@@ -111,6 +113,11 @@ class Spider(scrapy.Spider):
             for link in links:
                 file.write(link + "\n")
         print(f"Links saved to {filename}")
+
+    def generate_id(self):
+        # Generate a UUID based on the current time and machine address
+        unique_id = str(uuid.uuid1())
+        return unique_id
 
     def filter_social_links(self, links):
         http_links = [link for link in links if re.match(r"^https?://", link)]

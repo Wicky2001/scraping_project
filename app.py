@@ -14,6 +14,9 @@ from utills import (
     assign_category,
     insert_data,
     get_category_data,
+    remove_duplicates_by_title,
+    add_id_to_grouped_articles,
+    get_article,
 )
 import json
 from bson.json_util import dumps
@@ -75,10 +78,12 @@ def run_spider_in_process():
     if scraped_result_json:
         print("Scraped file location:", scraped_result_json)
         scraped_result_json = assign_category(scraped_result_json)
+        scraped_result_json = remove_duplicates_by_title(scraped_result_json)
 
         clustered_json = cluster_articles(
             scraped_result_json, "results/clusterd_articles"
         )
+        clustered_json = add_id_to_grouped_articles(clustered_json)
 
         summerized_json = summarize_articles(
             clustered_json, "results/summarized_articles"
@@ -99,41 +104,61 @@ def schedule_runner():
         time.sleep(1)
 
 
-@app.route("/latest-results", methods=["GET"])
-def get_latest_result():
+@app.route("/latest-news", methods=["GET"])
+def get_latest_news():
     try:
-        # Define the directory containing the results
         result_dir = "results/summarized_articles"
 
-        # Get a list of all JSON files in the directory
         list_of_files = glob.glob(os.path.join(result_dir, "*.json"))
 
         if not list_of_files:
             return jsonify({"error": "No results available"}), 404
 
-        # Get the most recently created file
         latest_file = max(list_of_files, key=os.path.getctime)
 
-        # Read the content of the latest JSON file
         with open(latest_file, "r", encoding="utf-8") as file:
             data = json.load(file)
 
-        # Return the content of the JSON file as a response
         return jsonify(data)
 
     except Exception as e:
-        # Handle any exceptions that might occur
         return jsonify({"error": str(e)}), 500
 
 
 @app.route("/news", methods=["GET"])
 def get_categorized_news():
-    category = request.args.get("category", "Politics").strip()
-    data = get_category_data(str(category))
+    category = request.args.get("category", "").strip()
+    id = request.args.get("id", "").strip()
 
-    # Using bson.json_util.dumps to handle ObjectId serialization
-    return app.response_class(response=dumps(data), mimetype="application/json")
+    # Validate input
+    if not category and not id:
+        return jsonify(
+            {
+                "error": "Missing required parameters. Please provide at least 'category'."
+            }
+        ), 400
 
+    # Case: both category and id provided
+    if id:
+        article = get_article(category=category, id=id)
+        if article:
+            return app.response_class(
+                response=dumps(article), mimetype="application/json", status=200
+            )
+        else:
+            return jsonify({"error": "Article not found."}), 404
+
+    # Case: only category provided
+    elif category:
+        category_data = get_category_data(category)
+        if not category_data:
+            return jsonify({"error": f"No data found for category '{category}'."}), 404
+        return app.response_class(
+            response=dumps(category_data), mimetype="application/json", status=200
+        )
+
+
+# def search_by_text(text)
 
 ### Start scheduler when app starts ###
 if __name__ == "__main__":

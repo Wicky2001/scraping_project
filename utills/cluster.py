@@ -4,7 +4,7 @@ import datetime
 from dotenv import load_dotenv
 import openai
 import re
-
+import unicodedata
 
 load_dotenv()
 deepseek_api_key = os.getenv("DEEPSEEK_API_KEY")
@@ -26,21 +26,21 @@ def extract_titles(results_json_file_location):
     return titles, all_articles
 
 
-def remove_duplicates_by_title(data):
-    seen_titles = set()
-    unique_articles = []
+# def remove_duplicates_by_title(data):
+#     seen_titles = set()
+#     unique_articles = []
 
-    for article in data:
-        if article["title"] not in seen_titles:
-            seen_titles.add(article["title"])
-            unique_articles.append(article)
+#     for article in data:
+#         if article["title"] not in seen_titles:
+#             seen_titles.add(article["title"])
+#             unique_articles.append(article)
 
-    return unique_articles
+#     return unique_articles
 
 
 def cluster_titles(results_json_file_location):
     titles, all_articles = extract_titles(results_json_file_location)
-    unique_articles = remove_duplicates_by_title(all_articles)
+    # unique_articles = remove_duplicates_by_title(all_articles)
     print(f"Extracted titles = {titles}\n\n\n")
 
     prompt = f"""
@@ -79,23 +79,28 @@ Return ONLY a valid Python list in which include classification details of title
     print(
         f"{response.choices[0].message.content} ********************************************"
     )
-    return response.choices[0].message.content, unique_articles
+    return response.choices[0].message.content, all_articles
+
+
+import re
+import unicodedata
 
 
 def clean_title(title):
-    prompt = f"""Clean the following Sinhala news title by removing hidden characters, invisible Unicode, and any unnecessary symbols or formatting. Return ONLY the cleaned title.
+    # Normalize Unicode (recommended for composed characters)
+    title = unicodedata.normalize("NFKC", title)
 
-Title: {title}"""
+    # Step 1: Remove invisible/control/format characters (Cc, Cf)
+    title = "".join(c for c in title if unicodedata.category(c) not in ["Cf", "Cc"])
 
-    response = client.chat.completions.create(
-        model="deepseek-chat",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0,
-    )
+    # Step 2: Remove unwanted symbols, but KEEP Sinhala letters and spaces
+    # Sinhala block: \u0D80-\u0DFF + common whitespace
+    title = re.sub(r"[^\u0D80-\u0DFF\s]", "", title)
 
-    cleaned_title = response.choices[0].message.content.strip()
-    # print(cleaned_title)
-    return cleaned_title
+    # Step 3: Normalize spaces
+    title = re.sub(r"\s+", " ", title).strip()
+
+    return title
 
 
 def convert_to_list(text):
@@ -115,21 +120,12 @@ def cluster_articles(results_json_file_location, output_folder):
     grouped_list, full_articles = cluster_titles(results_json_file_location)
     grouped_list = convert_to_list(grouped_list)
 
-    # print(f"grouped_list = {grouped_list} \n\n\n\n\n\n\n")
-    # print("type = ", type(grouped_list))
-
-    # for item in grouped_list:
-    #     print("\ntype of innter items = ",type(item))
-
     title_to_group = {}
     for title, group in grouped_list:
         if group != "unique":
             cleaned_title = clean_title(title)
             title_to_group[cleaned_title] = group
-    # print(title_to_group)
 
-    # Create a dictionary to store grouped articles
-    # representative_title: The title of the first article in the group (used as the representative title).
     grouped_dict = {}
     for title, group in title_to_group.items():
         if group not in grouped_dict:
@@ -141,15 +137,14 @@ def cluster_articles(results_json_file_location, output_folder):
 
     # Add articles to their respective groups
     for article in full_articles:
-        title = article["title"]
-        # print(f"title = {title}")
-        # print(f"tittle_to_group = {title_to_group}\n\n")
+        title = clean_title(article["title"])
+        print(f"title = {title}")
+        print(f"tittle_to_group = {title_to_group}\n\n")
         if title in title_to_group:
             group = title_to_group[title]
 
             grouped_dict[group]["articles"].append(article)
         else:
-            # If the article is unique, add it as a standalone entry
             grouped_dict[title] = article
 
     # Convert the dictionary to a list
