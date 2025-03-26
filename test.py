@@ -7,6 +7,7 @@ from utills import (
     insert_data,
     get_category_data,
     create_search_index,
+    text_search,
 )
 
 # clustered_json = cluster_articles(
@@ -14,7 +15,9 @@ from utills import (
 #     r"results\clusterd_articles",
 # )
 
-create_search_index()
+# create_search_index()
+
+print(text_search("අත්අඩංගුවට"))
 
 # remove_duplicates_by_title(r"results\raw_articles\scraped_results_20250321_192657.json")
 # print(get_category_data("Politics"))

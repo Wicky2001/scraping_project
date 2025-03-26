@@ -86,6 +86,24 @@ def get_article(id, category):
         return {"error": "Document not found"}
 
 
+def text_search(search_query):
+    results = []
+    db = get_db()
+
+    query = {"$text": {"$search": search_query}}
+    sort = [("summary", 1)]
+
+    for collection_name in db.list_collection_names():
+        collection = db[collection_name]
+
+        collection.create_index([("summary", "text")], default_language="none")
+
+        for doc in collection.find(query).sort(sort):
+            results.append(doc)
+
+    return results
+
+
 def get_category_data(category):
     db = get_db()
     collection = db[category]

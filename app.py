@@ -17,6 +17,7 @@ from utills import (
     remove_duplicates_by_title,
     add_id_to_grouped_articles,
     get_article,
+    text_search,
 )
 import json
 from bson.json_util import dumps
@@ -155,6 +156,22 @@ def get_categorized_news():
             return jsonify({"error": f"No data found for category '{category}'."}), 404
         return app.response_class(
             response=dumps(category_data), mimetype="application/json", status=200
+        )
+
+
+@app.route("/search", methods=["GET"])
+def search():
+    query = request.args.get("query", "")
+    if not query:
+        return jsonify(
+            {"error": "Missing required parameters. Please provide at 'query'."}
+        ), 400
+    else:
+        search_result = text_search(query)
+        if len(search_result) == 0:
+            return jsonify({"error": "No result found "}), 400
+        return app.response_class(
+            response=dumps(search_result), mimetype="application/json", status=200
         )
 
 
