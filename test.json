@@ -22,6 +22,12 @@
       "content": "div.new_details p::text",
       "date": "div.author_main span::text",
       "cover_image": "img#post_img::attr(src)"
+    },
+    "https://www.hirunews.lk/": {
+      "title": "h1.main-tittle::text",
+      "content": "div#article-phara *::text",
+      "date": "center p::text",
+      "cover_image": "div.main-article-banner img::attr(src)"
     }
   }
 }

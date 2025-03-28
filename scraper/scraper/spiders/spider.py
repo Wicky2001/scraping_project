@@ -97,6 +97,10 @@ class Spider(scrapy.Spider):
         cover_image_url = response.css(self.parsing_rules[source]["cover_image"]).get()
         iso_date, too_old = self.process_date(date_raw, source)
 
+        # print(f"title = {title}*******************************************\n\n\n")
+
+        #  if title and content and iso_date and not too_old:
+
         if title and content and iso_date and not too_old:
             yield {
                 "id": self.generate_id(),
@@ -107,7 +111,7 @@ class Spider(scrapy.Spider):
                 "content": content.strip(),
                 "source": source,
             }
-        # if title and content:
+        # if title:
         #     yield {
         #         "id": self.generate_id(),
         #         "title": title.strip(),
@@ -157,6 +161,15 @@ class Spider(scrapy.Spider):
             "/gssports.lk/",
             "/lakhandaradio.lk/",
             "/yfm.lk/",
+            "hirutv.lk",
+            "hirutvnews",
+            "/www.shaafm.lk/",
+            "/www.goldfm.lk/",
+            "hirufm",
+            "shaafm",
+            "sunfm",
+            "facebook.com",
+            "/tamil/",
         ]
 
         social_media_patterns = [
@@ -211,6 +224,22 @@ class Spider(scrapy.Spider):
                     cleaned_date, "%d-%m-%Y | %I:%M %p"
                 )
                 date_obj = date_obj.replace(tzinfo=datetime.timezone.utc)
+                iso_date = date_obj.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+            elif source == "https://www.hirunews.lk/":
+                # Remove any day of the week at the start of the string (e.g., "Sunday, ")
+                cleaned_date = re.sub(r"^[A-Za-z]+, ", "", raw_date).strip()
+                print(
+                    f"cleaned date = {cleaned_date}****************************************************"
+                )
+
+                # Parse the cleaned date with the appropriate format
+                date_obj = datetime.datetime.strptime(cleaned_date, "%d %B %Y - %H:%M")
+
+                # Make the datetime object aware (in UTC)
+                date_obj = pytz.UTC.localize(date_obj)
+
+                # Convert the date to ISO format (with UTC time zone)
                 iso_date = date_obj.strftime("%Y-%m-%dT%H:%M:%SZ")
 
             else:
