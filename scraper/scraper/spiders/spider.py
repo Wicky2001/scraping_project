@@ -107,6 +107,16 @@ class Spider(scrapy.Spider):
                 "content": content.strip(),
                 "source": source,
             }
+        # if title and content:
+        #     yield {
+        #         "id": self.generate_id(),
+        #         "title": title.strip(),
+        #         "url": response.url,
+        #         "cover_image": cover_image_url,
+        #         "date_published": date_raw,
+        #         "content": content.strip(),
+        #         "source": source,
+        #     }
 
     def save_links_to_file(self, links, filename):
         with open(filename, "a", encoding="utf-8") as file:
@@ -146,6 +156,7 @@ class Spider(scrapy.Spider):
             "/workspaceupdates.googleblog.com/",
             "/gssports.lk/",
             "/lakhandaradio.lk/",
+            "/yfm.lk/",
         ]
 
         social_media_patterns = [
@@ -194,6 +205,13 @@ class Spider(scrapy.Spider):
                 utc_date = local_date.astimezone(pytz.utc)
                 iso_date = utc_date.strftime("%Y-%m-%dT%H:%M:%SZ")
                 date_obj = utc_date
+
+            elif source == "https://sinhala.newsfirst.lk/":
+                date_obj = datetime.datetime.strptime(
+                    cleaned_date, "%d-%m-%Y | %I:%M %p"
+                )
+                date_obj = date_obj.replace(tzinfo=datetime.timezone.utc)
+                iso_date = date_obj.strftime("%Y-%m-%dT%H:%M:%SZ")
 
             else:
                 return None, False

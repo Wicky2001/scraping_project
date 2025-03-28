@@ -4,17 +4,11 @@
   "main_links_save_location": "results/scraped_links/main_links.txt",
   "sub_links_save_locattion": "results/scraped_links/article_links.txt",
   "parsing_rules": {
-    "https://sinhala.adaderana.lk/": {
-      "title": "article.news h1.news-heading::text",
-      "content": "article.news div.news-content p::text",
-      "date": "article.news p.news-datestamp::text",
-      "cover_image": "article.news div.news-banner img::attr(src)"
-    },
-    "https://www.itnnews.lk/": {
-      "title": "div.single-header-content h1.fw-headline::text",
-      "content": "div.entry-content p::text",
-      "date": "time::attr(datetime)",
-      "cover_image": "div.s-feat-holder img::attr(src)"
+    "https://sinhala.newsfirst.lk/": {
+      "title": "h1.top_stories_header_news::text",
+      "content": "div.new_details p::text",
+      "date": "div.author_main span::text",
+      "cover_image": "img#post_img::attr(src)"
     }
   }
 }
