@@ -15,9 +15,14 @@ from utills import (
 #     r"results\clusterd_articles",
 # )
 
+
+summarize_articles(
+    r"results\clusterd_articles\clustered_articles_20250329_0102.json",
+    r"results\summarized_articles",
+)
 # create_search_index()
 
-print(text_search("අත්අඩංගුවට"))
+# print(text_search("අත්අඩංගුවට"))
 
 # remove_duplicates_by_title(r"results\raw_articles\scraped_results_20250321_192657.json")
 # print(get_category_data("Politics"))
