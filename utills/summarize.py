@@ -21,6 +21,7 @@ def generate_summary(text, is_grouped=False, is_short=True):
                 f"Write an effective news lead in Sinhala for the following {'collection of news articles' if is_grouped else 'news article'}. "
                 "The lead must be a single sentence, ideally 20-25 words long, and should deliver a sharp statement of the story's essential facts. "
                 "Balance maximum information with readability. Focus on summarizing the most significant details, addressing as many of the five Ws (Who, What, When, Where, Why) as possible.Just only give the summary. I do not want any other single things"
+                "Very importent : Only give the summary I do not want any other single character."
                 f"{text}"
             )
 
@@ -29,6 +30,7 @@ def generate_summary(text, is_grouped=False, is_short=True):
                 f"Write an effective news lead in Sinhala for the following {'collection of news articles' if is_grouped else 'news article'}. "
                 "Generate good summary the summary must contain all the things the length of summary does not matter it must cover all the aspect. "
                 "Balance maximum information with readability. Focus on summarizing the most significant details, addressing as many of the five Ws (Who, What, When, Where, Why) as possible.Just only give the summary. I do not want any other single things"
+                "Very importent: Only give the summary I do not want any other single character"
                 f"{text}"
             )
 
