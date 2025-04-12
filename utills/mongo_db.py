@@ -16,7 +16,7 @@ def create_search_index():
     db = get_db()
     for collection_name in db.list_collection_names():
         collection = db[collection_name]
-        collection.create_index([("summary", "text")], default_language="none")
+        collection.create_index([("long_summary", "text")], default_language="none")
 
 
 def insert_data(json_file_path):
@@ -91,12 +91,11 @@ def text_search(search_query):
     db = get_db()
 
     query = {"$text": {"$search": search_query}}
-    sort = [("summary", 1)]
+    sort = [("long_summary", 1)]
 
     for collection_name in db.list_collection_names():
         collection = db[collection_name]
-
-        collection.create_index([("summary", "text")], default_language="none")
+        collection.create_index([("long_summary", "text")], default_language="none")
 
         for doc in collection.find(query).sort(sort):
             results.append(doc)

@@ -162,6 +162,7 @@ def get_categorized_news():
 @app.route("/search", methods=["GET"])
 def search():
     query = request.args.get("query", "")
+    print(f"query is = {query}")
     if not query:
         return jsonify(
             {"error": "Missing required parameters. Please provide at 'query'."}

@@ -14,12 +14,12 @@ from utills import (
 #     r"results\raw_articles\scraped_results_20250324_173107.json",
 #     r"results\clusterd_articles",
 # )
+create_search_index()
 
-
-summarize_articles(
-    r"results\clusterd_articles\clustered_articles_20250329_0102.json",
-    r"results\summarized_articles",
-)
+# summarize_articles(
+#     r"results\clusterd_articles\clustered_articles_20250329_0102.json",
+#     r"results\summarized_articles",
+# )
 # create_search_index()
 
 # print(text_search("අත්අඩංගුවට"))

@@ -229,9 +229,9 @@ class Spider(scrapy.Spider):
             elif source == "https://www.hirunews.lk/":
                 # Remove any day of the week at the start of the string (e.g., "Sunday, ")
                 cleaned_date = re.sub(r"^[A-Za-z]+, ", "", raw_date).strip()
-                print(
-                    f"cleaned date = {cleaned_date}****************************************************"
-                )
+                # print(
+                #     f"cleaned date = {cleaned_date}****************************************************"
+                # )
 
                 # Parse the cleaned date with the appropriate format
                 date_obj = datetime.datetime.strptime(cleaned_date, "%d %B %Y - %H:%M")
