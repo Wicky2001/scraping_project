@@ -8,13 +8,15 @@ from utills import (
     get_category_data,
     create_search_index,
     text_search,
+    remove_duplicated,
 )
 
 # clustered_json = cluster_articles(
 #     r"results\raw_articles\scraped_results_20250324_173107.json",
 #     r"results\clusterd_articles",
 # )
-create_search_index()
+
+remove_duplicated()
 
 # summarize_articles(
 #     r"results\clusterd_articles\clustered_articles_20250329_0102.json",

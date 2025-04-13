@@ -109,3 +109,24 @@ def get_category_data(category):
     data = collection.find()
 
     return list(data)
+
+
+def remove_duplicated():
+    db = get_db()
+    count = 0
+    for collection_name in db.list_collection_names():
+        collection = db[collection_name]
+        seen_titles = set()
+
+        for doc in collection.find():
+            key = doc.get("title") or doc.get("representative_title")
+
+            if not key:
+                continue
+
+            if key in seen_titles:
+                collection.delete_one({"_id": doc["_id"]})
+                count += 1
+            else:
+                seen_titles.add(key)
+    print(f"{count} duplications  are deleted")

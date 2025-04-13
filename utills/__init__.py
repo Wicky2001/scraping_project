@@ -7,5 +7,6 @@ from .mongo_db import (
     get_article,
     create_search_index,
     text_search,
+    remove_duplicated,
 )
 from .post_process import remove_duplicates_by_title, add_id_to_grouped_articles
