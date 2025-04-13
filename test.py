@@ -16,8 +16,8 @@ from utills import (
 #     r"results\clusterd_articles",
 # )
 
-remove_duplicated()
 
+insert_data(r"results\summarized_articles\final_news_data_20250412_2145.json")
 # summarize_articles(
 #     r"results\clusterd_articles\clustered_articles_20250329_0102.json",
 #     r"results\summarized_articles",

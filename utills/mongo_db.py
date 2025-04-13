@@ -60,7 +60,9 @@ def insert_data(json_file_path):
                 collection = db[
                     article["category"]
                 ]  # Assuming each article has a 'category' key
-                collection.insert_one(article)  # Insert the article into the database
+
+                insert_unique_document(collection, article)
+                # collection.insert_one(article)  # Insert the article into the database
                 pbar.update(1)  # Update progress bar after insertion
         create_search_index()
 
@@ -71,6 +73,26 @@ def insert_data(json_file_path):
         print(f"Error: {e}")
     except Exception as e:
         print(f"Unexpected error: {e}")
+
+
+def insert_unique_document(collection, data):
+    # Use either title or representative_title as the deduplication key
+    key = data.get("title") or data.get("representative_title")
+
+    if not key:
+        print("Document skipped: no title or representative_title.")
+        return
+
+    # Check if a document with the same key already exists
+    existing = collection.find_one(
+        {"$or": [{"title": key}, {"representative_title": key}]}
+    )
+
+    if existing:
+        print(f"Duplicate found for key: '{key}'. Skipping insertion.")
+    else:
+        collection.insert_one(data)
+        print(f"Inserted: {key}")
 
 
 def get_article(id, category):
