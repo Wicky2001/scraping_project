@@ -180,8 +180,8 @@ def search():
 
 ### Start scheduler when app starts ###
 if __name__ == "__main__":
-    # t = threading.Thread(target=schedule_runner)
-    # t.daemon = True
-    # t.start()
+    t = threading.Thread(target=schedule_runner)
+    t.daemon = True
+    t.start()
 
     app.run(host="0.0.0.0", port=8000, debug=True)
