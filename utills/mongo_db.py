@@ -2,7 +2,6 @@ import pymongo
 import json
 import os
 from tqdm import tqdm
-from bson.json_util import dumps
 
 
 def get_db(url="mongodb://localhost:27017/", db_name="scraper_db"):
@@ -50,7 +49,7 @@ def insert_data(json_file_path):
                     continue
 
                 collection = db[article["category"]]
-                insert_unique_document(collection, article)
+                collection.insert_one(article)
 
                 pbar.update(1)
         create_search_index()
