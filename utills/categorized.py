@@ -4,11 +4,11 @@ from dotenv import load_dotenv
 import openai
 from tqdm import tqdm
 
-# Load API key from .env
+
 load_dotenv()
 deepseek_api_key = os.getenv("DEEPSEEK_API_KEY")
 
-# Initialize OpenAI client for DeepSeek
+
 client = openai.OpenAI(api_key=deepseek_api_key, base_url="https://api.deepseek.com/v1")
 
 
@@ -71,6 +71,45 @@ def assign_category(json_file_path):
 
         print(f"Final processed news data saved to '{json_file_path}'")
         return json_file_path
+
+    except FileNotFoundError as fnf_error:
+        print(f"Error: {fnf_error}")
+    except ValueError as ve:
+        print(f"Error: {ve}")
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+
+
+def select_articles_category_wise(json_file_path):
+    articles_dict = {
+        "Business": [],
+        "Entertainment": [],
+        "General": [],
+        "Health": [],
+        "Science": [],
+        "Sports": [],
+        "Technology": [],
+        "Politics": [],
+    }
+
+    try:
+        if not os.path.exists(json_file_path):
+            raise FileNotFoundError(f"File '{json_file_path}' does not exist.")
+
+        # Load JSON file
+        with open(json_file_path, "r", encoding="utf-8") as file:
+            try:
+                articles = json.load(file)
+            except json.JSONDecodeError as e:
+                raise ValueError(f"Invalid JSON format: {e}")
+
+        if not isinstance(articles, list):
+            raise ValueError("The JSON file must contain a list of articles.")
+
+        for article in articles:
+            articles_dict[article["category"]].append(article["long_summary"])
+
+        return articles_dict
 
     except FileNotFoundError as fnf_error:
         print(f"Error: {fnf_error}")

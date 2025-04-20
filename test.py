@@ -9,6 +9,9 @@ from utills import (
     create_search_index,
     text_search,
     remove_duplicated,
+    insert_data_weekly_wise,
+    select_articles_category_wise,
+    summarize_news_weekly_wise,
 )
 
 # clustered_json = cluster_articles(
@@ -17,7 +20,21 @@ from utills import (
 # )
 
 
-insert_data(r"results\summarized_articles\final_news_data_20250412_2145.json")
+# insert_data_weekly_wise(
+#     r"results\summarized_articles\final_news_data_20250418_1659.json"
+# )
+
+# select_articles_category_wise(
+#     r"results\summarized_articles\final_news_data_20250418_1659.json"
+# )
+
+print(
+    summarize_news_weekly_wise(
+        r"results\summarized_articles\final_news_data_20250418_1659.json"
+    )
+)
+
+# insert_data(r"results\summarized_articles\final_news_data_20250412_2145.json")
 # summarize_articles(
 #     r"results\clusterd_articles\clustered_articles_20250329_0102.json",
 #     r"results\summarized_articles",

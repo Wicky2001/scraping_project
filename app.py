@@ -18,6 +18,7 @@ from utills import (
     add_id_to_grouped_articles,
     get_article,
     text_search,
+    get_weekly_news,
 )
 import json
 from bson.json_util import dumps
@@ -159,10 +160,22 @@ def get_categorized_news():
         )
 
 
+@app.route("/weekly_news", methods=["GET"])
+def weekly_news():
+    weekly_news = get_weekly_news()
+
+    if weekly_news:
+        return app.response_class(
+            response=dumps(weekly_news), mimetype="application/json", status=200
+        )
+    else:
+        return jsonify({"error": "No news data found for the current week."}), 404
+
+
 @app.route("/search", methods=["GET"])
 def search():
     query = request.args.get("query", "")
-    print(f"query is = {query}")
+
     if not query:
         return jsonify(
             {"error": "Missing required parameters. Please provide at 'query'."}
@@ -180,8 +193,8 @@ def search():
 
 ### Start scheduler when app starts ###
 if __name__ == "__main__":
-    t = threading.Thread(target=schedule_runner)
-    t.daemon = True
-    t.start()
+    # t = threading.Thread(target=schedule_runner)
+    # t.daemon = True
+    # t.start()
 
-    app.run(host="0.0.0.0", port=8000, debug=True)
+    app.run(host="0.0.0.0", port=8000, debug=True, use_reloader=False)

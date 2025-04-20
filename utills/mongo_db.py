@@ -2,6 +2,8 @@ import pymongo
 import json
 import os
 from tqdm import tqdm
+from datetime import datetime
+import calendar
 
 
 def get_db(url="mongodb://localhost:27017/", db_name="scraper_db"):
@@ -138,3 +140,46 @@ def remove_duplicated():
             else:
                 seen_titles.add(key)
     print(f"{count} duplications  are deleted")
+
+
+def get_week_of_month(date: datetime) -> int:
+    """Calculate which week of the month the date falls into."""
+    first_day = date.replace(day=1)
+    dom = date.day
+    adjusted_dom = dom + first_day.weekday()
+    return int((adjusted_dom - 1) / 7) + 1
+
+
+def get_weekly_collection_name():
+    now = datetime.now()
+    year = now.year
+    month_name = calendar.month_name[now.month]
+    week_number = get_week_of_month(now)
+
+    collection_name = f"{year}_{month_name}_week{week_number}"
+
+    return collection_name
+
+
+def insert_data_weekly_wise(json_file_location):
+    with open(json_file_location, "r", encoding="utf-8") as f:
+        articles = json.load(f)
+
+    collection_name = get_weekly_collection_name()
+
+    db = get_db()
+    collection = db[collection_name]
+
+    result = collection.insert_many(articles)
+    print(
+        f"Inserted {len(result.inserted_ids)} articles into collection '{collection_name}'."
+    )
+
+
+def get_weekly_news():
+    db = get_db()
+    collection_name = get_weekly_collection_name()
+    collection = db[collection_name]
+    all_docs = collection.find()
+
+    return all_docs

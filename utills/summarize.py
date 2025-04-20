@@ -4,6 +4,7 @@ import datetime
 from dotenv import load_dotenv
 import openai
 from tqdm import tqdm
+from .categorized import select_articles_category_wise
 
 # Load API key from .env
 load_dotenv()
@@ -125,3 +126,35 @@ def summarize_articles(json_file_path, output_folder):
         print(f"Error: {ve}")
     except Exception as e:
         print(f"Unexpected error: {e}")
+
+
+def summarize_news_weekly_wise(json_file_location):
+    article_dict = select_articles_category_wise(json_file_path=json_file_location)
+    weekly_summary_dict = {}
+
+    for category, articles in article_dict.items():
+        if not articles:
+            continue
+
+        try:
+            joined_articles = ", ".join(articles)
+
+            prompt = (
+                f"Summarize this week's {category} news. Each input article is separated by a comma.You must generate a creative and eye catching single description combinition all news.Use creative language do not use emojies"
+                f"Sinhala news content: {joined_articles}.Use the language as same as inputed language which is sinhla. Just only give the output I do not want any other single word"
+            )
+
+            response = client.chat.completions.create(
+                model="deepseek-chat",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.7,
+            )
+
+            summary = response.choices[0].message.content
+            weekly_summary_dict[category] = summary
+
+        except Exception as e:
+            print(f"Error generating summary for {category}: {e}")
+            weekly_summary_dict[category] = "Summary not available due to an error."
+
+    return weekly_summary_dict
