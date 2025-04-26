@@ -4,6 +4,8 @@ import os
 from tqdm import tqdm
 from datetime import datetime
 import calendar
+import regex as re
+from bson.json_util import dumps
 
 
 def get_db(url="mongodb://localhost:27017/", db_name="scraper_db"):
@@ -20,8 +22,30 @@ def create_search_index():
         collection.create_index([("long_summary", "text")], default_language="none")
 
 
+def insert_unique_document(collection, data):
+    key = data.get("title") or data.get("representative_title")
+
+    if not key:
+        print("Document skipped: no title or representative_title.")
+        return None
+
+    existing = collection.find_one(
+        {"$or": [{"title": key}, {"representative_title": key}]}
+    )
+
+    if existing:
+        print(f"Duplicate found for key: '{key}'. Skipping insertion.")
+        return None
+    else:
+        collection.insert_one(data)
+        print(f"Inserted: {key}")
+        return data
+
+
 def insert_data(json_file_path):
     try:
+        inserted_articles = []
+
         if not os.path.exists(json_file_path):
             raise FileNotFoundError(f"File '{json_file_path}' does not exist.")
 
@@ -35,6 +59,8 @@ def insert_data(json_file_path):
             raise ValueError("The JSON file must contain a list of articles.")
 
         db = get_db()
+        inserted_count = 0
+        skipped_count = 0
 
         total_items = sum(
             len(article.get("articles", []))
@@ -51,36 +77,38 @@ def insert_data(json_file_path):
                     continue
 
                 collection = db[article["category"]]
-                collection.insert_one(article)
+
+                inserted_article = insert_unique_document(collection, article)
+                if inserted_article is not None:
+                    print(f"ineserted_article = {inserted_article}")
+                    inserted_articles.append(inserted_article)
+                    inserted_count += 1
+                else:
+                    skipped_count += 1
 
                 pbar.update(1)
+
         create_search_index()
 
-        print("Data insertion completed successfully.")
+        # Overwrite JSON file with only successfully inserted articles
+        for article in inserted_articles:
+            if "_id" in article:
+                del article["_id"]  # ✅ This removes the '_id' field
+        with open(json_file_path, "w", encoding="utf-8") as f:
+            json.dump(inserted_articles, f, ensure_ascii=False, indent=4)
+
+        print(
+            f"Inserted {inserted_count} article(s). Skipped {skipped_count} duplicate(s)."
+        )
+
         return True
 
     except (FileNotFoundError, ValueError) as e:
         print(f"Error: {e}")
+        return False
     except Exception as e:
         print(f"Unexpected error: {e}")
-
-
-def insert_unique_document(collection, data):
-    key = data.get("title") or data.get("representative_title")
-
-    if not key:
-        print("Document skipped: no title or representative_title.")
-        return
-
-    existing = collection.find_one(
-        {"$or": [{"title": key}, {"representative_title": key}]}
-    )
-
-    if existing:
-        print(f"Duplicate found for key: '{key}'. Skipping insertion.")
-    else:
-        collection.insert_one(data)
-        print(f"Inserted: {key}")
+        return False
 
 
 def get_article(id, category):
@@ -94,6 +122,25 @@ def get_article(id, category):
         return document
     else:
         return {"error": "Document not found"}
+
+
+def normalize(text):
+    return re.sub(r"[^\p{L}\p{N}]", "", text)
+
+
+def remove_duplicates_in_search(results):
+    seen_titles = set()
+    unique_results = []
+
+    for item in results:
+        title = item.get("representative_title") or item.get("title")
+        if title:
+            norm_title = normalize(title)
+            if norm_title not in seen_titles:
+                seen_titles.add(norm_title)
+                unique_results.append(item)
+
+    return unique_results
 
 
 def text_search(search_query):
@@ -110,7 +157,7 @@ def text_search(search_query):
         for doc in collection.find(query).sort(sort):
             results.append(doc)
 
-    return results
+    return remove_duplicates_in_search(results)
 
 
 def get_category_data(category):

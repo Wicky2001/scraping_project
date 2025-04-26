@@ -21,18 +21,25 @@ from utills import (
 
 
 # insert_data_weekly_wise(
-#     r"results\summarized_articles\final_news_data_20250418_1659.json"
+#     r"results\summarized_articles\final_news_data_20250420_1611.json"
+# )
+
+insert_data(r"results\summarized_articles\final_news_data_20250420_1611.json")
+# print(
+#     summarize_news_weekly_wise(
+#         r"results\summarized_articles\final_news_data_20250420_1611.json"
+#     )
 # )
 
 # select_articles_category_wise(
 #     r"results\summarized_articles\final_news_data_20250418_1659.json"
 # )
 
-print(
-    summarize_news_weekly_wise(
-        r"results\summarized_articles\final_news_data_20250418_1659.json"
-    )
-)
+# print(
+#     summarize_news_weekly_wise(
+#         r"results\summarized_articles\final_news_data_20250418_1659.json"
+#     )
+# )
 
 # insert_data(r"results\summarized_articles\final_news_data_20250412_2145.json")
 # summarize_articles(

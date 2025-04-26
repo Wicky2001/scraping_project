@@ -132,6 +132,10 @@ def summarize_news_weekly_wise(json_file_location):
     article_dict = select_articles_category_wise(json_file_path=json_file_location)
     weekly_summary_dict = {}
 
+    # Create output folder if it doesn't exist
+    output_folder = "output_test"
+    os.makedirs(output_folder, exist_ok=True)
+
     for category, articles in article_dict.items():
         if not articles:
             continue
@@ -139,10 +143,7 @@ def summarize_news_weekly_wise(json_file_location):
         try:
             joined_articles = ", ".join(articles)
 
-            prompt = (
-                f"Summarize this week's {category} news. Each input article is separated by a comma.You must generate a creative and eye catching single description combinition all news.Use creative language do not use emojies"
-                f"Sinhala news content: {joined_articles}.Use the language as same as inputed language which is sinhla. Just only give the output I do not want any other single word"
-            )
+            prompt = f"'{category}' ප්‍රවර්ගයට අයත් මෙම සතියේ සියළුම ප්‍රවෘත්ති සාක්ෂාත්මකව විශ්ලේෂණය කරමින්, කිසිඳු අධ්‍යායන මතභේදයකින් තොරව, එක් අවධිවූ පැහැදිලි වූ පදවින් සම්පූර්ණ වශයෙන් විශේෂාංග ලිපියක් (comprehensive feature article) පාඨය බෙදී නොමැතිව, එකම පරිච්ඡේදයකින් (single paragraph) ලියන්න. Sinhala භාෂාවෙන් පමණක් ලියන්න. පහත දී ඇති ප්‍රවෘත්ති අන්තර්ගතය පදනම් කරගන්න: {joined_articles}"
 
             response = client.chat.completions.create(
                 model="deepseek-chat",
@@ -156,5 +157,10 @@ def summarize_news_weekly_wise(json_file_location):
         except Exception as e:
             print(f"Error generating summary for {category}: {e}")
             weekly_summary_dict[category] = "Summary not available due to an error."
+
+    # Save summary to JSON file
+    output_path = os.path.join(output_folder, "weekly_summary.json")
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(weekly_summary_dict, f, ensure_ascii=False, indent=4)
 
     return weekly_summary_dict
