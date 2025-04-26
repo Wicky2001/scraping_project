@@ -72,7 +72,7 @@ def add_id_to_grouped_articles(json_file_path):
             if article.get("group_id") and len(article.get("articles")) != 0:
                 article["id"] = article.get("articles")[0].get("id")
                 article["category"] = article.get("articles")[0].get("category")
-                article["date_published"] = article.get("date_published")[0].get(
+                article["date_published"] = article.get("articles")[0].get(
                     "date_published"
                 )
 

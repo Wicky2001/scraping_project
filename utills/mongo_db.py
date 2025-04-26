@@ -24,10 +24,24 @@ def create_search_index():
 
 def insert_unique_document(collection, data):
     key = data.get("title") or data.get("representative_title")
+    date = data.get("date_published")
 
     if not key:
         print("Document skipped: no title or representative_title.")
         return None
+    if not date:
+        print("Document skipped: no date.")
+        return None
+
+    # Convert 'date_published' to datetime if it exists and is a string
+    if "date_published" in data and isinstance(data["date_published"], str):
+        try:
+            data["date_published"] = datetime.fromisoformat(
+                data["date_published"].replace("Z", "+00:00")
+            )
+        except Exception as e:
+            print(f"Error converting date_published for '{key}': {e}")
+            return None  # Skip if invalid date
 
     existing = collection.find_one(
         {"$or": [{"title": key}, {"representative_title": key}]}
@@ -38,14 +52,11 @@ def insert_unique_document(collection, data):
         return None
     else:
         collection.insert_one(data)
-        print(f"Inserted: {key}")
         return data
 
 
 def insert_data(json_file_path):
     try:
-        inserted_articles = []
-
         if not os.path.exists(json_file_path):
             raise FileNotFoundError(f"File '{json_file_path}' does not exist.")
 
@@ -78,24 +89,10 @@ def insert_data(json_file_path):
 
                 collection = db[article["category"]]
 
-                inserted_article = insert_unique_document(collection, article)
-                if inserted_article is not None:
-                    print(f"ineserted_article = {inserted_article}")
-                    inserted_articles.append(inserted_article)
-                    inserted_count += 1
-                else:
-                    skipped_count += 1
-
+                insert_unique_document(collection, article)
                 pbar.update(1)
 
         create_search_index()
-
-        # Overwrite JSON file with only successfully inserted articles
-        for article in inserted_articles:
-            if "_id" in article:
-                del article["_id"]  # ✅ This removes the '_id' field
-        with open(json_file_path, "w", encoding="utf-8") as f:
-            json.dump(inserted_articles, f, ensure_ascii=False, indent=4)
 
         print(
             f"Inserted {inserted_count} article(s). Skipped {skipped_count} duplicate(s)."
