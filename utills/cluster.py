@@ -26,18 +26,6 @@ def extract_titles(results_json_file_location):
     return titles, all_articles
 
 
-# def remove_duplicates_by_title(data):
-#     seen_titles = set()
-#     unique_articles = []
-
-#     for article in data:
-#         if article["title"] not in seen_titles:
-#             seen_titles.add(article["title"])
-#             unique_articles.append(article)
-
-#     return unique_articles
-
-
 def cluster_titles(results_json_file_location):
     titles, all_articles = extract_titles(results_json_file_location)
     # unique_articles = remove_duplicates_by_title(all_articles)
