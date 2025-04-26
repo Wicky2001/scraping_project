@@ -2,7 +2,7 @@ import pymongo
 import json
 import os
 from tqdm import tqdm
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 import calendar
 import regex as re
 from bson.json_util import dumps
@@ -227,3 +227,29 @@ def get_weekly_news():
     all_docs = collection.find()
 
     return all_docs
+
+
+def get_recent_top_news(limit_per_collection=20):
+    db = get_db()
+    recent_news = []
+    six_hours_ago = datetime.now(timezone.utc) - timedelta(hours=1200)
+
+    for collection_name in db.list_collection_names():
+        collection = db[collection_name]
+
+        cursor = (
+            collection.find({"date_published": {"$gte": six_hours_ago}})
+            .sort("date_published", -1)
+            .limit(limit_per_collection)
+        )
+
+        for doc in cursor:
+            doc["_id"] = str(doc["_id"])
+            if "date_published" in doc:
+                doc["date_published"] = doc["date_published"].isoformat()
+
+            recent_news.append(doc)
+
+        print(recent_news)
+
+    return recent_news

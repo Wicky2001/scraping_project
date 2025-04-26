@@ -19,6 +19,7 @@ from utills import (
     get_article,
     text_search,
     get_weekly_news,
+    get_recent_top_news,
 )
 import json
 from bson.json_util import dumps
@@ -109,19 +110,21 @@ def schedule_runner():
 @app.route("/latest-news", methods=["GET"])
 def get_latest_news():
     try:
-        result_dir = "results/summarized_articles"
+        #     result_dir = "results/summarized_articles"
 
-        list_of_files = glob.glob(os.path.join(result_dir, "*.json"))
+        #     list_of_files = glob.glob(os.path.join(result_dir, "*.json"))
 
-        if not list_of_files:
-            return jsonify({"error": "No results available"}), 404
+        #     if not list_of_files:
+        #         return jsonify({"error": "No results available"}), 404
 
-        latest_file = max(list_of_files, key=os.path.getctime)
+        #     latest_file = max(list_of_files, key=os.path.getctime)
 
-        with open(latest_file, "r", encoding="utf-8") as file:
-            data = json.load(file)
+        #     with open(latest_file, "r", encoding="utf-8") as file:
+        #         data = json.load(file)
 
-        return jsonify(data)
+        top_news = get_recent_top_news()
+
+        return jsonify(top_news)
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -193,8 +196,8 @@ def search():
 
 ### Start scheduler when app starts ###
 if __name__ == "__main__":
-    t = threading.Thread(target=schedule_runner)
-    t.daemon = True
-    t.start()
+    # t = threading.Thread(target=schedule_runner)
+    # t.daemon = True
+    # t.start()
 
     app.run(host="0.0.0.0", port=8000, debug=True, use_reloader=False)
