@@ -3,7 +3,6 @@ import json
 import os
 from tqdm import tqdm
 from datetime import datetime, timedelta, timezone
-import calendar
 import regex as re
 from bson.json_util import dumps
 
@@ -89,7 +88,11 @@ def insert_data(json_file_path):
 
                 collection = db[article["category"]]
 
-                insert_unique_document(collection, article)
+                status = insert_unique_document(collection, article)
+                if status:
+                    inserted_count += 1
+                else:
+                    skipped_count += 1
                 pbar.update(1)
 
         create_search_index()
@@ -194,45 +197,45 @@ def get_week_of_month(date: datetime) -> int:
     return int((adjusted_dom - 1) / 7) + 1
 
 
-def get_weekly_collection_name():
-    now = datetime.now()
-    year = now.year
-    month_name = calendar.month_name[now.month]
-    week_number = get_week_of_month(now)
+# def get_weekly_collection_name():
+#     now = datetime.now()
+#     year = now.year
+#     month_name = calendar.month_name[now.month]
+#     week_number = get_week_of_month(now)
 
-    collection_name = f"{year}_{month_name}_week{week_number}"
+#     collection_name = f"{year}_{month_name}_week{week_number}"
 
-    return collection_name
-
-
-def insert_data_weekly_wise(json_file_location):
-    with open(json_file_location, "r", encoding="utf-8") as f:
-        articles = json.load(f)
-
-    collection_name = get_weekly_collection_name()
-
-    db = get_db()
-    collection = db[collection_name]
-
-    result = collection.insert_many(articles)
-    print(
-        f"Inserted {len(result.inserted_ids)} articles into collection '{collection_name}'."
-    )
+#     return collection_name
 
 
-def get_weekly_news():
-    db = get_db()
-    collection_name = get_weekly_collection_name()
-    collection = db[collection_name]
-    all_docs = collection.find()
+# def insert_data_weekly_wise(json_file_location):
+#     with open(json_file_location, "r", encoding="utf-8") as f:
+#         articles = json.load(f)
 
-    return all_docs
+#     collection_name = get_weekly_collection_name()
+
+#     db = get_db()
+#     collection = db[collection_name]
+
+#     result = collection.insert_many(articles)
+#     print(
+#         f"Inserted {len(result.inserted_ids)} articles into collection '{collection_name}'."
+#     )
+
+
+# def get_weekly_news():
+#     db = get_db()
+#     collection_name = get_weekly_collection_name()
+#     collection = db[collection_name]
+#     all_docs = collection.find()
+
+#     return all_docs
 
 
 def get_recent_top_news(limit_per_collection=20):
     db = get_db()
     recent_news = []
-    six_hours_ago = datetime.now(timezone.utc) - timedelta(hours=1200)
+    six_hours_ago = datetime.now(timezone.utc) - timedelta(hours=6)
 
     for collection_name in db.list_collection_names():
         collection = db[collection_name]
@@ -253,3 +256,30 @@ def get_recent_top_news(limit_per_collection=20):
         print(recent_news)
 
     return recent_news
+
+
+def get_this_weeks_news():
+    db = get_db()
+    collections = db.list_collection_names()
+    this_weeks_news = {}
+
+    for collection_name in collections:
+        this_weeks_news[collection_name] = []
+
+    today = datetime.now(timezone.utc)
+    start_of_week = today - timedelta(days=today.weekday())
+    start_of_week = datetime(start_of_week.year, start_of_week.month, start_of_week.day)
+
+    for collection_name in collections:
+        collection = db[collection_name]
+
+        query = {"date_published": {"$gte": start_of_week, "$lte": today}}
+
+        documents = collection.find(query).sort("date_published", -1)
+
+        for doc in documents:
+            this_weeks_news[collection_name].append(doc["long_summary"])
+
+    print(f"\n\n\n\this week news = {this_weeks_news}\n\n\n\n")
+
+    return this_weeks_news

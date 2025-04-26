@@ -5,6 +5,9 @@ from dotenv import load_dotenv
 import openai
 from tqdm import tqdm
 from .categorized import select_articles_category_wise
+from .mongo_db import get_this_weeks_news
+import re
+import json
 
 # Load API key from .env
 load_dotenv()
@@ -48,9 +51,6 @@ def generate_summary(text, is_grouped=False, is_short=True):
         return "News lead not available due to an error."
 
 
-# Progress bar library
-
-
 def summarize_articles(json_file_path, output_folder):
     """
     Load articles from a JSON file, process them, and save the final structured JSON.
@@ -73,11 +73,9 @@ def summarize_articles(json_file_path, output_folder):
 
         print("Summarization started...")
 
-        # Wrap articles with tqdm for progress bar
         for item in tqdm(articles, desc="Processing articles", unit="article"):
             try:
                 if "group_id" in item:
-                    # Grouped articles: Merge content from all articles
                     combined_text = " ".join(
                         article["content"] for article in item["articles"]
                     )
@@ -105,12 +103,10 @@ def summarize_articles(json_file_path, output_folder):
             except Exception as e:
                 print(f"Error processing article: {e}")
 
-        # Generate a unique filename with timestamp
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
         output_filename = f"final_news_data_{timestamp}.json"
         output_filepath = os.path.join(output_folder, output_filename)
 
-        # Ensure output folder exists
         os.makedirs(output_folder, exist_ok=True)
 
         # Save to JSON file
@@ -128,22 +124,44 @@ def summarize_articles(json_file_path, output_folder):
         print(f"Unexpected error: {e}")
 
 
-def summarize_news_weekly_wise(json_file_location):
-    article_dict = select_articles_category_wise(json_file_path=json_file_location)
+def clean_json_text(json_data):
+    cleaned_data = {}
+
+    for key, value in json_data.items():
+        # Remove **bold markers**
+        text = re.sub(r"\*\*(.*?)\*\*", r"\1", value)
+        # Remove backslashes
+        text = text.replace("\\", "")
+        # Remove unwanted whitespace
+        text = re.sub(r"\s+", " ", text).strip()
+
+        cleaned_data[key] = text
+
+    return cleaned_data
+
+
+def create_feature_article():
     weekly_summary_dict = {}
-
-    # Create output folder if it doesn't exist
-    output_folder = "output_test"
-    os.makedirs(output_folder, exist_ok=True)
-
+    article_dict = get_this_weeks_news()
     for category, articles in article_dict.items():
-        if not articles:
+        if len(articles) == 0:
             continue
 
         try:
             joined_articles = ", ".join(articles)
 
-            prompt = f"'{category}' ප්‍රවර්ගයට අයත් මෙම සතියේ සියළුම ප්‍රවෘත්ති සාක්ෂාත්මකව විශ්ලේෂණය කරමින්, කිසිඳු අධ්‍යායන මතභේදයකින් තොරව, එක් අවධිවූ පැහැදිලි වූ පදවින් සම්පූර්ණ වශයෙන් විශේෂාංග ලිපියක් (comprehensive feature article) පාඨය බෙදී නොමැතිව, එකම පරිච්ඡේදයකින් (single paragraph) ලියන්න. Sinhala භාෂාවෙන් පමණක් ලියන්න. පහත දී ඇති ප්‍රවෘත්ති අන්තර්ගතය පදනම් කරගන්න: {joined_articles}"
+            prompt = f"""
+            '{category}' ප්‍රවර්ගයට අයත්, මෙම සතියේ සටහන් වූ සියලුම ප්‍රවෘත්ති විෂයයන් සවිස්තරව විශ්ලේෂණය කරමින්, 
+            නිරපේක්ෂ, තරකාරහිත, විශ්වාසනීය සහ සාක්ෂාත්මක තොරතුරු මත පදනම්ව සංකීර්ණ වූ විශේෂාංග ලිපියක් (feature article) රචනා කරන්න. 
+            ලිපිය ලියීමේදී පසුපස කතාවක් (background), වත්මන් තත්වය (current situation), බලපෑම් (impacts), 
+            භාවි ප්‍රවණතා (future trends) සහ සාකච්ඡා (critical discussion) වැනි කරුණු ඒකාබද්ධ කරමින්, 
+            එය එක් අවධිවූ, ගැඹුරු අර්ථ දැක්වීමක් සහිත, නිවැරදි ව්‍යාකරණ සහිත, පැහැදිලි සහ අධික ප්‍රබල වූ පරිච්ඡේදයකින් (single paragraph) සකස් කරන්න. 
+            අවශ්‍යනම් සංකේතාත්මක ආශ්‍රය (contextual references) සම්බන්ධයෙන් සංක්ෂිප්තව සඳහන් කරන්න. 
+            සැලකිලිමත් ව්‍යාපෘතියක් ලෙස, සාමූහික ආකාරයෙන් සියළුම ප්‍රවෘත්ති අන්තර්ගතය එකට බැඳී ගන්න.
+
+                ලිපිය ලියිය යුත්තේ පමණක් සිංහල භාෂාවෙන් (Sinhala language only).
+                භාවිතා කළ යුතු පද පෙළ, පහත දැක්වෙන {joined_articles} යි.
+            """
 
             response = client.chat.completions.create(
                 model="deepseek-chat",
@@ -158,9 +176,8 @@ def summarize_news_weekly_wise(json_file_location):
             print(f"Error generating summary for {category}: {e}")
             weekly_summary_dict[category] = "Summary not available due to an error."
 
-    # Save summary to JSON file
-    output_path = os.path.join(output_folder, "weekly_summary.json")
+    output_path = os.path.join(r"results\feature_articles", "weekly_summary.json")
     with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(weekly_summary_dict, f, ensure_ascii=False, indent=4)
+        json.dump(clean_json_text(weekly_summary_dict), f, ensure_ascii=False, indent=4)
 
-    return weekly_summary_dict
+    return clean_json_text(weekly_summary_dict)

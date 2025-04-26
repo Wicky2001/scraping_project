@@ -9,11 +9,10 @@ from utills import (
     create_search_index,
     text_search,
     remove_duplicated,
-    insert_data_weekly_wise,
     select_articles_category_wise,
-    summarize_news_weekly_wise,
     add_id_to_grouped_articles,
     get_recent_top_news,
+    create_feature_article,
 )
 
 # clustered_json = add_id_to_grouped_articles(
@@ -23,4 +22,10 @@ from utills import (
 # summerized_json = summarize_articles(clustered_json, "results/summarized_articles")
 # insert_data(summerized_json)
 
-get_recent_top_news()
+# get_recent_top_news()
+
+# create_feature_article(
+#     r"results\summarized_articles\final_news_data_20250426_1131.json"
+# )
+
+print(create_feature_article())

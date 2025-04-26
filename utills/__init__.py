@@ -1,4 +1,4 @@
-from .summarize import summarize_articles, summarize_news_weekly_wise
+from .summarize import summarize_articles, create_feature_article
 from .cluster import extract_titles, cluster_titles, cluster_articles
 from .categorized import assign_category, select_articles_category_wise
 from .mongo_db import *

@@ -2,8 +2,6 @@ from flask import Flask, jsonify, request
 import schedule
 import time
 import threading
-import os
-import glob
 from multiprocessing import Process, Queue
 from scrapy.crawler import CrawlerProcess
 from scraper.scraper.spiders.spider import Spider
@@ -18,8 +16,8 @@ from utills import (
     add_id_to_grouped_articles,
     get_article,
     text_search,
-    get_weekly_news,
     get_recent_top_news,
+    create_feature_article,
 )
 import json
 from bson.json_util import dumps
@@ -92,14 +90,14 @@ def run_spider_in_process():
             clustered_json, "results/summarized_articles"
         )
         insert_data(summerized_json)
+        create_feature_article()
 
     else:
         print("Failed to scrape articles.")
 
 
-### Scheduler thread ###
 def schedule_runner():
-    run_spider_in_process()  # Run immediately on server start
+    run_spider_in_process()
     schedule.every(6).hours.do(run_spider_in_process)
 
     while True:
@@ -110,18 +108,6 @@ def schedule_runner():
 @app.route("/latest-news", methods=["GET"])
 def get_latest_news():
     try:
-        #     result_dir = "results/summarized_articles"
-
-        #     list_of_files = glob.glob(os.path.join(result_dir, "*.json"))
-
-        #     if not list_of_files:
-        #         return jsonify({"error": "No results available"}), 404
-
-        #     latest_file = max(list_of_files, key=os.path.getctime)
-
-        #     with open(latest_file, "r", encoding="utf-8") as file:
-        #         data = json.load(file)
-
         top_news = get_recent_top_news()
 
         return jsonify(top_news)
@@ -135,7 +121,6 @@ def get_categorized_news():
     category = request.args.get("category", "").strip()
     id = request.args.get("id", "").strip()
 
-    # Validate input
     if not category and not id:
         return jsonify(
             {
@@ -143,7 +128,6 @@ def get_categorized_news():
             }
         ), 400
 
-    # Case: both category and id provided
     if id:
         article = get_article(category=category, id=id)
         if article:
@@ -153,7 +137,6 @@ def get_categorized_news():
         else:
             return jsonify({"error": "Article not found."}), 404
 
-    # Case: only category provided
     elif category:
         category_data = get_category_data(category)
         if not category_data:
@@ -163,16 +146,43 @@ def get_categorized_news():
         )
 
 
-@app.route("/weekly_news", methods=["GET"])
-def weekly_news():
-    weekly_news = get_weekly_news()
+def load_articles():
+    file_path = r"results\feature_articles\weekly_summary.json"
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"Error loading article.json: {e}")
+        return {}
 
-    if weekly_news:
-        return app.response_class(
-            response=dumps(weekly_news), mimetype="application/json", status=200
-        )
+
+@app.route("/feature_article", methods=["GET"])
+def weekly_news():
+    category = request.args.get("category")
+
+    if not category:
+        return jsonify(
+            {"success": False, "message": "Missing 'category' parameter in request."}
+        ), 400
+
+    articles = load_articles()
+
+    if category in articles:
+        return jsonify(
+            {
+                "success": True,
+                "category": category,
+                "feature_article": articles[category],
+            }
+        ), 200
     else:
-        return jsonify({"error": "No news data found for the current week."}), 404
+        return jsonify(
+            {
+                "success": False,
+                "message": f"Category '{category}' not found.",
+                "available_categories": list(articles.keys()),
+            }
+        ), 404
 
 
 @app.route("/search", methods=["GET"])
@@ -192,9 +202,6 @@ def search():
         )
 
 
-# def search_by_text(text)
-
-### Start scheduler when app starts ###
 if __name__ == "__main__":
     # t = threading.Thread(target=schedule_runner)
     # t.daemon = True
