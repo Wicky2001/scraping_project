@@ -97,11 +97,17 @@ class Spider(scrapy.Spider):
         cover_image_url = response.css(self.parsing_rules[source]["cover_image"]).get()
         iso_date, too_old = self.process_date(date_raw, source)
 
-        # print(f"title = {title}*******************************************\n\n\n")
-
-        #  if title and content and iso_date and not too_old:
-
-        if title and content and iso_date and not too_old:
+        # if title and content and iso_date and not too_old:
+        #     yield {
+        #         "id": self.generate_id(),
+        #         "title": title.strip(),
+        #         "url": response.url,
+        #         "cover_image": cover_image_url,
+        #         "date_published": iso_date,
+        #         "content": content.strip(),
+        #         "source": source,
+        #     }
+        if title and content and iso_date:
             yield {
                 "id": self.generate_id(),
                 "title": title.strip(),
@@ -111,16 +117,6 @@ class Spider(scrapy.Spider):
                 "content": content.strip(),
                 "source": source,
             }
-        # if title:
-        #     yield {
-        #         "id": self.generate_id(),
-        #         "title": title.strip(),
-        #         "url": response.url,
-        #         "cover_image": cover_image_url,
-        #         "date_published": date_raw,
-        #         "content": content.strip(),
-        #         "source": source,
-        #     }
 
     def save_links_to_file(self, links, filename):
         with open(filename, "a", encoding="utf-8") as file:

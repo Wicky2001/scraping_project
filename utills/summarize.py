@@ -4,10 +4,9 @@ import datetime
 from dotenv import load_dotenv
 import openai
 from tqdm import tqdm
-from .categorized import select_articles_category_wise
 from .mongo_db import get_this_weeks_news
 import re
-import json
+
 
 # Load API key from .env
 load_dotenv()

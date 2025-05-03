@@ -1,6 +1,7 @@
 import json
 import os
 from tqdm import tqdm
+from datetime import datetime
 
 
 def remove_duplicates_by_title(json_file_path):
@@ -88,3 +89,34 @@ def add_id_to_grouped_articles(json_file_path):
         print(f"Error: {ve}")
     except Exception as e:
         print(f"Unexpected error: {e}")
+
+
+def assign_week_label(json_file_path):
+    with open(json_file_path, "r", encoding="utf-8") as file:
+        try:
+            articles = json.load(file)
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Invalid JSON format: {e}")
+
+    for article in articles:
+        date_str = article.get("date_published")
+        if not date_str:
+            continue
+
+        try:
+            date_obj = datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%SZ")
+        except ValueError:
+            continue
+
+        year = date_obj.year
+        month = date_obj.month
+        day = date_obj.day
+
+        week_of_month = (day - 1) // 7 + 1
+
+        article["week"] = f"{year}_{str(month).zfill(2)}_WEEK{week_of_month}"
+
+    with open(json_file_path, "w", encoding="utf-8") as file:
+        json.dump(articles, file, ensure_ascii=False, indent=4)
+
+    return json_file_path

@@ -18,6 +18,7 @@ from utills import (
     text_search,
     get_recent_top_news,
     create_feature_article,
+    assign_week_label,
 )
 import json
 from bson.json_util import dumps
@@ -75,9 +76,10 @@ def run_spider_in_process():
     p.start()
     p.join()
 
-    scraped_result_json = queue.get()  #
+    scraped_result_json = queue.get()
     if scraped_result_json:
         print("Scraped file location:", scraped_result_json)
+        scraped_result_json = assign_week_label(scraped_result_json)
         scraped_result_json = assign_category(scraped_result_json)
         scraped_result_json = remove_duplicates_by_title(scraped_result_json)
 
@@ -203,8 +205,8 @@ def search():
 
 
 if __name__ == "__main__":
-    # t = threading.Thread(target=schedule_runner)
-    # t.daemon = True
-    # t.start()
+    t = threading.Thread(target=schedule_runner)
+    t.daemon = True
+    t.start()
 
     app.run(host="0.0.0.0", port=8000, debug=True, use_reloader=False)

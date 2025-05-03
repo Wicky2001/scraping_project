@@ -223,15 +223,6 @@ def get_week_of_month(date: datetime) -> int:
 #     )
 
 
-# def get_weekly_news():
-#     db = get_db()
-#     collection_name = get_weekly_collection_name()
-#     collection = db[collection_name]
-#     all_docs = collection.find()
-
-#     return all_docs
-
-
 def get_recent_top_news(limit_per_collection=20):
     db = get_db()
     recent_news = []
