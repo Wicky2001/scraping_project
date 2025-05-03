@@ -223,10 +223,10 @@ def get_week_of_month(date: datetime) -> int:
 #     )
 
 
-def get_recent_top_news(limit_per_collection=200):
+def get_recent_top_news(limit_per_collection=5):
     db = get_db()
     recent_news = []
-    six_hours_ago = datetime.now(timezone.utc) - timedelta(hours=6)
+    six_hours_ago = datetime.now(timezone.utc) - timedelta(hours=10000)
 
     for collection_name in db.list_collection_names():
         collection = db[collection_name]
