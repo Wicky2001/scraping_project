@@ -1,4 +1,5 @@
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 import schedule
 import time
 import threading
@@ -24,6 +25,7 @@ import json
 from bson.json_util import dumps
 
 app = Flask(__name__)
+CORS(app, origins=["http://localhost:5173"])
 
 
 ### Scrapy spider runner ###
@@ -205,8 +207,8 @@ def search():
 
 
 if __name__ == "__main__":
-    t = threading.Thread(target=schedule_runner)
-    t.daemon = True
-    t.start()
+    # t = threading.Thread(target=schedule_runner)
+    # t.daemon = True
+    # t.start()
 
     app.run(host="0.0.0.0", port=8000, debug=True, use_reloader=False)

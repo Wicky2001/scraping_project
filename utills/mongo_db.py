@@ -223,7 +223,7 @@ def get_week_of_month(date: datetime) -> int:
 #     )
 
 
-def get_recent_top_news(limit_per_collection=20):
+def get_recent_top_news(limit_per_collection=200):
     db = get_db()
     recent_news = []
     six_hours_ago = datetime.now(timezone.utc) - timedelta(hours=6)
