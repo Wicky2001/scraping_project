@@ -1,5 +1,6 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, Response
 from flask_cors import CORS
+from bson.json_util import dumps
 import schedule
 import time
 import threading
@@ -107,7 +108,7 @@ def schedule_runner():
         time.sleep(1)
 
 
-@app.route("/latest-news", methods=["GET"])
+@app.route("/api/latest-news", methods=["GET"])
 def get_latest_news():
     try:
         top_news = get_recent_top_news()
@@ -116,48 +117,72 @@ def get_latest_news():
         return jsonify({"success": False, "data": [], "message": str(e)}), 500
 
 
-@app.route("/news", methods=["GET"])
+@app.route("/api/news", methods=["GET"])
 def get_categorized_news():
     try:
         category = request.args.get("category", "").strip()
         id = request.args.get("id", "").strip()
 
         if not category and not id:
-            return jsonify(
-                {
-                    "success": False,
-                    "data": [],
-                    "message": "Missing required parameters. Provide at least 'category'.",
-                }
-            ), 400
+            return Response(
+                dumps(
+                    {
+                        "success": False,
+                        "data": [],
+                        "message": "Missing required parameters. Provide at least 'category'.",
+                    }
+                ),
+                mimetype="application/json",
+                status=400,
+            )
 
         if id:
             article = get_article(category=category, id=id)
             if article:
-                return jsonify({"success": True, "data": article}), 200
+                return Response(
+                    dumps({"success": True, "data": article}),
+                    mimetype="application/json",
+                    status=200,
+                )
             else:
-                return jsonify(
-                    {"success": False, "data": [], "message": "Article not found."}
-                ), 404
+                return Response(
+                    dumps(
+                        {"success": False, "data": [], "message": "Article not found."}
+                    ),
+                    mimetype="application/json",
+                    status=404,
+                )
 
         elif category:
             category_data = get_category_data(category)
             if not category_data:
-                return jsonify(
-                    {
-                        "success": False,
-                        "data": [],
-                        "message": f"No data found for category '{category}'.",
-                    }
-                ), 404
+                return Response(
+                    dumps(
+                        {
+                            "success": False,
+                            "data": [],
+                            "message": f"No data found for category '{category}'.",
+                        }
+                    ),
+                    mimetype="application/json",
+                    status=404,
+                )
 
-            return jsonify({"success": True, "data": category_data}), 200
+            return Response(
+                dumps({"success": True, "data": category_data}),
+                mimetype="application/json",
+                status=200,
+            )
 
     except Exception as e:
-        return jsonify({"success": False, "data": [], "message": str(e)}), 500
+        return Response(
+            dumps({"success": False, "data": [], "message": str(e)}),
+            mimetype="application/json",
+            status=500,
+        )
 
 
-@app.route("/feature_article", methods=["GET"])
+@app.route("/api/feature_article", methods=["GET"])
 def weekly_news():
     try:
         category = request.args.get("category")
@@ -186,7 +211,7 @@ def weekly_news():
         return jsonify({"success": False, "data": [], "message": str(e)}), 500
 
 
-@app.route("/search", methods=["GET"])
+@app.route("/api/search", methods=["GET"])
 def search():
     try:
         query = request.args.get("query", "")
@@ -204,8 +229,8 @@ def search():
 
         if len(search_result) == 0:
             return jsonify(
-                {"success": False, "data": [], "message": "No results found."}
-            ), 404
+                {"success": True, "data": [], "message": "No results found."}
+            ), 200
 
         return jsonify({"success": True, "data": search_result}), 200
 
@@ -227,4 +252,4 @@ if __name__ == "__main__":
     # t = threading.Thread(target=schedule_runner)
     # t.daemon = True
     # t.start()
-    app.run(host="0.0.0.0", port=8000, debug=True, use_reloader=False)
+    app.run(host="0.0.0.0", port=8000, debug=True, use_reloader=True)
