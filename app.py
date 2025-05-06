@@ -23,7 +23,7 @@ from utills import (
     assign_week_label,
 )
 import json
-
+import os
 
 app = Flask(__name__)
 CORS(app, origins=["http://localhost:5173"])
@@ -38,7 +38,9 @@ def run_spider(queue):
         use_proxies = config.get("use_proxies", "False").lower() == "true"
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_filename = f"results/raw_articles/scraped_results_{timestamp}.json"
+        output_filename = os.path.join(
+            "results", "raw_articles", f"scraped_results_{timestamp}.json"
+        )
 
         scrapy_settings = {
             "FEEDS": {
@@ -80,18 +82,17 @@ def run_spider_in_process():
 
     scraped_result_json = queue.get()
     if scraped_result_json:
-        print("Scraped file location:", scraped_result_json)
         scraped_result_json = assign_week_label(scraped_result_json)
         scraped_result_json = assign_category(scraped_result_json)
         scraped_result_json = remove_duplicates_by_title(scraped_result_json)
 
         clustered_json = cluster_articles(
-            scraped_result_json, "results/clusterd_articles"
+            scraped_result_json, os.path.join("results", "clusterd_articles")
         )
         clustered_json = add_id_to_grouped_articles(clustered_json)
 
         summerized_json = summarize_articles(
-            clustered_json, "results/summarized_articles"
+            clustered_json, os.path.join("results", "summarized_articles")
         )
         insert_data(summerized_json)
         create_feature_article()
@@ -239,7 +240,7 @@ def search():
 
 
 def load_articles():
-    file_path = r"results\feature_articles\weekly_summary.json"
+    file_path = os.path.join("results", "feature_articles", "weekly_summary.json")
     try:
         with open(file_path, "r", encoding="utf-8") as f:
             return json.load(f)
