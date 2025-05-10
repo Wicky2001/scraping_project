@@ -155,6 +155,7 @@ def text_search(search_query):
         collection.create_index([("long_summary", "text")], default_language="none")
 
         for doc in collection.find(query).sort(sort):
+            doc["_id"] = str(doc["_id"])  # Convert ObjectId to string
             results.append(doc)
 
     return remove_duplicates_in_search(results)
@@ -244,7 +245,7 @@ def get_recent_top_news(limit_per_collection=5):
 
             recent_news.append(doc)
 
-        print(recent_news)
+        # print(recent_news)
 
     return recent_news
 
