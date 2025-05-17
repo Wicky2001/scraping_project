@@ -22,6 +22,7 @@ from utills import (
     generate_and_insert_feature_article,
     assign_week_label,
     get_db,
+    get_weekly_collection_name,
 )
 import json
 import os
@@ -30,7 +31,6 @@ app = Flask(__name__)
 CORS(app)
 
 
-### Scrapy spider runner ###
 def run_spider(queue):
     try:
         with open("config.json", "r", encoding="utf-8") as file:
@@ -184,6 +184,38 @@ def get_categorized_news():
         )
 
 
+@app.route("/api/this_week_feature_article", methods=["GET"])
+def get_current_week_feature_article():
+    db = get_db()
+    week = get_weekly_collection_name()
+    collection = db[week]
+    documents = list(collection.find({}))
+    for doc in documents:
+        doc["_id"] = str(doc["_id"])
+
+    return jsonify(documents)
+
+
+@app.route("/api/all_feature_articles", methods=["GET"])
+def all_feature_articles():
+    db = get_db()
+    collection_names = db.list_collection_names()
+
+    week_collections = [name for name in collection_names if "WEEK" in name.upper()]
+
+    all_data = {}
+
+    for col_name in week_collections:
+        collection = db[col_name]
+        documents = list(collection.find({}))
+
+        for doc in documents:
+            doc["_id"] = str(doc["_id"])
+        all_data[col_name] = documents
+
+    return jsonify(all_data)
+
+
 @app.route("/api/feature_article", methods=["GET"])
 def weekly_news():
     try:
@@ -240,35 +272,6 @@ def search():
         return jsonify({"success": False, "data": [], "message": str(e)}), 500
 
 
-@app.route("/feature_article", methods=["GET"])
-def get_feature_article():
-    db = get_db()
-
-    try:
-        week_of_the_article = request.args.get("week", "")
-
-        if not week_of_the_article:
-            return jsonify(
-                {
-                    "success": False,
-                    "data": [],
-                    "message": "Missing required 'week' parameter.",
-                }
-            ), 400
-
-        collection = db[week_of_the_article]
-        search_result = list(collection.find({}, {"_id": 0}))
-        if len(search_result) == 0:
-            return jsonify(
-                {"success": True, "data": [], "message": "No results found."}
-            ), 200
-
-        return jsonify({"success": True, "data": search_result}), 200
-
-    except Exception as e:
-        return jsonify({"success": False, "data": [], "message": str(e)}), 500
-
-
 def load_articles():
     file_path = os.path.join("results", "feature_articles", "weekly_summary.json")
     try:
@@ -280,7 +283,7 @@ def load_articles():
 
 
 if __name__ == "__main__":
-    t = threading.Thread(target=schedule_runner)
-    t.daemon = True
-    t.start()
-    app.run(host="0.0.0.0", port=8000, debug=True, use_reloader=False)
+    # t = threading.Thread(target=schedule_runner)
+    # t.daemon = True
+    # t.start()
+    app.run(host="0.0.0.0", port=8000, debug=True, use_reloader=True)
