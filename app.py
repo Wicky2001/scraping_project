@@ -21,6 +21,7 @@ from utills import (
     get_recent_top_news,
     create_feature_article,
     assign_week_label,
+    get_db,
 )
 import json
 import os
@@ -228,6 +229,35 @@ def search():
 
         search_result = text_search(query)
 
+        if len(search_result) == 0:
+            return jsonify(
+                {"success": True, "data": [], "message": "No results found."}
+            ), 200
+
+        return jsonify({"success": True, "data": search_result}), 200
+
+    except Exception as e:
+        return jsonify({"success": False, "data": [], "message": str(e)}), 500
+
+
+@app.route("/feature_article", methods=["GET"])
+def get_feature_article():
+    db = get_db()
+
+    try:
+        week_of_the_article = request.args.get("week", "")
+
+        if not week_of_the_article:
+            return jsonify(
+                {
+                    "success": False,
+                    "data": [],
+                    "message": "Missing required 'week' parameter.",
+                }
+            ), 400
+
+        collection = db[week_of_the_article]
+        search_result = list(collection.find({}, {"_id": 0}))
         if len(search_result) == 0:
             return jsonify(
                 {"success": True, "data": [], "message": "No results found."}
