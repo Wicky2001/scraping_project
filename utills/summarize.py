@@ -4,7 +4,7 @@ import datetime
 from dotenv import load_dotenv
 import openai
 from tqdm import tqdm
-from .mongo_db import get_this_weeks_news
+from .mongo_db import get_this_weeks_news, insert_feature_article
 import re
 
 
@@ -139,17 +139,18 @@ def clean_json_text(json_data):
     return cleaned_data
 
 
-def create_feature_article():
-    weekly_summary_dict = {}
-    article_dict = get_this_weeks_news()
-    for category, articles in article_dict.items():
-        if len(articles) == 0:
-            continue
+def give_feature_article(articles, category):
+    load_dotenv()
+    deepseek_api_key = os.getenv("DEEPSEEK_API_KEY")
 
-        try:
-            joined_articles = ", ".join(articles)
+    # Initialize OpenAI client for DeepSeek
+    client = openai.OpenAI(
+        api_key=deepseek_api_key, base_url="https://api.deepseek.com/v1"
+    )
+    try:
+        joined_articles = ", ".join(articles)
 
-            prompt = f"""
+        prompt = f"""
             '{category}' ප්‍රවර්ගයට අයත්, මෙම සතියේ සටහන් වූ සියලුම ප්‍රවෘත්ති විෂයයන් සවිස්තරව විශ්ලේෂණය කරමින්, 
             නිරපේක්ෂ, තරකාරහිත, විශ්වාසනීය සහ සාක්ෂාත්මක තොරතුරු මත පදනම්ව සංකීර්ණ වූ විශේෂාංග ලිපියක් (feature article) රචනා කරන්න. 
             ලිපිය ලියීමේදී පසුපස කතාවක් (background), වත්මන් තත්වය (current situation), බලපෑම් (impacts), 
@@ -162,21 +163,32 @@ def create_feature_article():
                 භාවිතා කළ යුතු පද පෙළ, පහත දැක්වෙන {joined_articles} යි.
             """
 
-            response = client.chat.completions.create(
-                model="deepseek-chat",
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.7,
-            )
+        response = client.chat.completions.create(
+            model="deepseek-chat",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7,
+        )
 
-            summary = response.choices[0].message.content
-            weekly_summary_dict[category] = summary
+        feature_article = response.choices[0].message.content
+        return feature_article
 
-        except Exception as e:
-            print(f"Error generating summary for {category}: {e}")
-            weekly_summary_dict[category] = "Summary not available due to an error."
+    except Exception as e:
+        print(f"Error generating summary for {category}: {e}")
 
-    output_path = os.path.join(r"results\feature_articles", "weekly_summary.json")
-    with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(clean_json_text(weekly_summary_dict), f, ensure_ascii=False, indent=4)
 
-    return clean_json_text(weekly_summary_dict)
+def generate_and_insert_feature_article():
+    data = get_this_weeks_news()
+    db_entry = {}
+    feature_articles = {}
+    for category, articles in data.items():
+        if category == "image_urls":
+            pass
+        else:
+            feature_article_for_category = give_feature_article(articles, category)
+            feature_articles[category] = feature_article_for_category
+    db_entry["feature_articles"] = feature_articles
+    db_entry["image_urls"] = data["image_urls"]
+
+    insert_feature_article(db_entry)
+
+    return db_entry

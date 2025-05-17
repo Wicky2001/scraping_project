@@ -5,6 +5,7 @@ from tqdm import tqdm
 from datetime import datetime, timedelta, timezone
 import regex as re
 from bson.json_util import dumps
+import calendar
 
 
 def get_db(url="mongodb://localhost:27017/", db_name="scraper_db"):
@@ -198,30 +199,43 @@ def get_week_of_month(date: datetime) -> int:
     return int((adjusted_dom - 1) / 7) + 1
 
 
-# def get_weekly_collection_name():
-#     now = datetime.now()
-#     year = now.year
-#     month_name = calendar.month_name[now.month]
-#     week_number = get_week_of_month(now)
-
-#     collection_name = f"{year}_{month_name}_week{week_number}"
-
-#     return collection_name
+def get_week_of_month(date):
+    first_day = date.replace(day=1)
+    dom = date.day
+    adjusted_dom = dom + first_day.weekday()
+    return ((adjusted_dom - 1) // 7) + 1
 
 
-# def insert_data_weekly_wise(json_file_location):
-#     with open(json_file_location, "r", encoding="utf-8") as f:
-#         articles = json.load(f)
+def get_weekly_collection_name():
+    now = datetime.now()
+    year = now.year
+    month = f"{now.month:02d}"  # e.g., 05 for May
+    week_number = get_week_of_month(now)
+    return f"{year}_{month}_WEEK{week_number}"
 
-#     collection_name = get_weekly_collection_name()
 
-#     db = get_db()
-#     collection = db[collection_name]
+def insert_feature_article(data):
+    db = get_db()
+    collection_name = get_weekly_collection_name()
 
-#     result = collection.insert_many(articles)
-#     print(
-#         f"Inserted {len(result.inserted_ids)} articles into collection '{collection_name}'."
-#     )
+    if collection_name in db.list_collection_names():
+        print(f"Updating existing feature article entry: {collection_name}")
+        db[collection_name].delete_many({})
+    else:
+        print(f"Creating new collection: {collection_name}")
+
+    # Insert data: check if data is a list or single dict
+    if isinstance(data, list):
+        if data:  # non-empty list
+            db[collection_name].insert_many(data)
+            print("Feature articles inserted.")
+        else:
+            print("Empty list provided, nothing inserted.")
+    elif isinstance(data, dict):
+        db[collection_name].insert_one(data)
+        print("Feature article inserted.")
+    else:
+        raise TypeError("Data must be a dictionary or a list of dictionaries.")
 
 
 def get_recent_top_news(limit_per_collection=5):
@@ -253,25 +267,47 @@ def get_recent_top_news(limit_per_collection=5):
 def get_this_weeks_news():
     db = get_db()
     collections = db.list_collection_names()
-    this_weeks_news = {}
 
-    for collection_name in collections:
-        this_weeks_news[collection_name] = []
+    # Filter out collections with "WEEK" in the name
+    collections = [name for name in collections if "WEEK" not in name.upper()]
+
+    this_weeks_news = {}
+    image_urls = []
 
     today = datetime.now(timezone.utc)
     start_of_week = today - timedelta(days=today.weekday())
-    start_of_week = datetime(start_of_week.year, start_of_week.month, start_of_week.day)
+    start_of_week = datetime(
+        start_of_week.year, start_of_week.month, start_of_week.day, tzinfo=timezone.utc
+    )
 
     for collection_name in collections:
         collection = db[collection_name]
-
         query = {"date_published": {"$gte": start_of_week, "$lte": today}}
 
-        documents = collection.find(query).sort("date_published", -1)
+        # Convert cursor to list so it can be reused
+        documents = list(collection.find(query).sort("date_published", -1))
 
+        # Extract long_summary
+        summaries = [
+            doc.get("long_summary", "") for doc in documents if "long_summary" in doc
+        ]
+        if summaries:
+            this_weeks_news[collection_name] = summaries
+
+        # Extract image URLs
         for doc in documents:
-            this_weeks_news[collection_name].append(doc["long_summary"])
+            if "group_id" in doc:
+                for a in doc.get("articles", []):
+                    image = a.get("cover_image")
+                    if image:
+                        image_urls.append(image)
+            else:
+                image = doc.get("cover_image")
+                if image:
+                    image_urls.append(image)
 
-    print(f"\n\n\n\this week news = {this_weeks_news}\n\n\n\n")
+    # Add image_urls only if not empty
+    if image_urls:
+        this_weeks_news["image_urls"] = image_urls
 
     return this_weeks_news

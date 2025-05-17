@@ -15,6 +15,8 @@ from utills import (
     create_feature_article,
     assign_week_label,
     get_db,
+    get_this_weeks_news,
+    get_weekly_collection_name,
 )
 
 
@@ -128,7 +130,6 @@ def categorize_articles_by_week():
 
 
 def give_feature_article(articles, category):
-    # Load API key from .env
     load_dotenv()
     deepseek_api_key = os.getenv("DEEPSEEK_API_KEY")
 
@@ -137,7 +138,7 @@ def give_feature_article(articles, category):
         api_key=deepseek_api_key, base_url="https://api.deepseek.com/v1"
     )
     try:
-        joined_articles = ", ".join(article["content"] for article in articles)
+        joined_articles = ", ".join(articles)
 
         prompt = f"""
             '{category}' ප්‍රවර්ගයට අයත්, මෙම සතියේ සටහන් වූ සියලුම ප්‍රවෘත්ති විෂයයන් සවිස්තරව විශ්ලේෂණය කරමින්, 
@@ -165,22 +166,22 @@ def give_feature_article(articles, category):
         print(f"Error generating summary for {category}: {e}")
 
 
-def generate_feature_articles():
-    articles_by_week = categorize_articles_by_week()
-    for week, article_dict in articles_by_week.items():
-        print("working")
-        feature_articles = {}
-        for article_category, articles in article_dict.items():
-            feature_article_for_a_category = give_feature_article(
-                articles=articles, category=article_category
-            )
-            feature_articles[article_category] = feature_article_for_a_category
-        print(f"\n\n{week} => {feature_articles}\n\n\n")
+# def generate_feature_articles():
+#     articles_by_week = categorize_articles_by_week()
+#     for week, article_dict in articles_by_week.items():
+#         print("working")
+#         feature_articles = {}
+#         for article_category, articles in article_dict.items():
+#             feature_article_for_a_category = give_feature_article(
+#                 articles=articles, category=article_category
+#             )
+#             feature_articles[article_category] = feature_article_for_a_category
+#         print(f"\n\n{week} => {feature_articles}\n\n\n")
 
-        articles_by_week[week]["feature_articles"] = feature_articles
+#         articles_by_week[week]["feature_articles"] = feature_articles
 
-    with open("./articles_by_week_preprocessed.json", "w", encoding="utf-8") as f:
-        json.dump(articles_by_week, f, default=str, indent=4, ensure_ascii=False)
+#     with open("./articles_by_week_preprocessed.json", "w", encoding="utf-8") as f:
+#         json.dump(articles_by_week, f, default=str, indent=4, ensure_ascii=False)
 
 
 def add_separate_image_field():
@@ -252,4 +253,49 @@ def drop_week_collections():
     print("Done.")
 
 
-insert_feature_articles_to_db()
+# insert_feature_articles_to_db()
+
+
+def generate_and_insert_feature_article():
+    data = get_this_weeks_news()
+    db_entry = {}
+    feature_articles = {}
+    for category, articles in data.items():
+        if category == "image_urls":
+            pass
+        else:
+            feature_article_for_category = give_feature_article(articles, category)
+            feature_articles[category] = feature_article_for_category
+    db_entry["feature_articles"] = feature_articles
+    db_entry["image_urls"] = data["image_urls"]
+
+    insert_feature_article(db_entry)
+
+    return db_entry
+
+
+def insert_feature_article(data):
+    db = get_db()
+    collection_name = get_weekly_collection_name()
+
+    if collection_name in db.list_collection_names():
+        print(f"Updating existing feature article entry: {collection_name}")
+        db[collection_name].delete_many({})
+    else:
+        print(f"Creating new collection: {collection_name}")
+
+    # Insert data: check if data is a list or single dict
+    if isinstance(data, list):
+        if data:  # non-empty list
+            db[collection_name].insert_many(data)
+            print("Feature articles inserted.")
+        else:
+            print("Empty list provided, nothing inserted.")
+    elif isinstance(data, dict):
+        db[collection_name].insert_one(data)
+        print("Feature article inserted.")
+    else:
+        raise TypeError("Data must be a dictionary or a list of dictionaries.")
+
+
+print(generate_and_insert_feature_article())

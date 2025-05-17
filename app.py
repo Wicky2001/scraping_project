@@ -19,7 +19,7 @@ from utills import (
     get_article,
     text_search,
     get_recent_top_news,
-    create_feature_article,
+    generate_and_insert_feature_article,
     assign_week_label,
     get_db,
 )
@@ -96,7 +96,7 @@ def run_spider_in_process():
             clustered_json, os.path.join("results", "summarized_articles")
         )
         insert_data(summerized_json)
-        create_feature_article()
+        generate_and_insert_feature_article()
     else:
         print("Failed to scrape articles.")
 
@@ -280,7 +280,7 @@ def load_articles():
 
 
 if __name__ == "__main__":
-    # t = threading.Thread(target=schedule_runner)
-    # t.daemon = True
-    # t.start()
-    app.run(host="0.0.0.0", port=8000, debug=True, use_reloader=True)
+    t = threading.Thread(target=schedule_runner)
+    t.daemon = True
+    t.start()
+    app.run(host="0.0.0.0", port=8000, debug=True, use_reloader=False)
