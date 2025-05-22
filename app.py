@@ -283,7 +283,7 @@ def load_articles():
 
 
 if __name__ == "__main__":
-    # t = threading.Thread(target=schedule_runner)
-    # t.daemon = True
-    # t.start()
-    app.run(host="0.0.0.0", port=8000, debug=True, use_reloader=True)
+    t = threading.Thread(target=schedule_runner)
+    t.daemon = True
+    t.start()
+    app.run(host="0.0.0.0", port=8000, debug=True, use_reloader=False)
